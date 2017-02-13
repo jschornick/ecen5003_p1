@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------
-LAB EXERCISE 5.2 - SQUARE ROOT APPROXIMATION
+ECEN5003 - Project 1, Module 1 - SQUARE ROOT APPROXIMATION
  ----------------------------------------
 Write an assembly code subroutine to approximate the square root of an 
 argument using the bisection method. All math is done with integers, so the 
@@ -8,9 +8,11 @@ resulting square root will also be an integer
 GOOD LUCK!
  *----------------------------------------------------------------------------*/
 
-__asm int my_sqrt(int x){
+__asm int my_sqrt(int x)
+{
 	
 	//Write your code here
+	BX lr
 
 }
 
@@ -31,4 +33,3 @@ int main(void){
 		;
 }
 
-// *******************************ARM University Program Copyright © ARM Ltd 2014*************************************
