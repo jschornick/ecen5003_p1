@@ -10,11 +10,11 @@ uint32_t sqrt_trunc(uint32_t num) {
   uint32_t guess = 0;
   uint32_t squared;
 
-  // optimize upper limit
-  high = (num <= high) ? num : high;
-
   // edge case, avoids sqrt_trun(1) == 0
   if(num<=1) { return num;};
+
+  // optimize upper limit
+  high = (num <= high) ? num : high;
 
   do {
     last_guess = guess;
