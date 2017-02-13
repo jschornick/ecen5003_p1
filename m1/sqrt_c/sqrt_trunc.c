@@ -10,8 +10,6 @@ uint32_t sqrt_trunc(uint32_t num) {
   uint32_t guess = 0;
   uint32_t squared;
 
-  int done = 0;
-
   // optimize upper limit
   high = (num <= high) ? num : high;
 
@@ -23,16 +21,16 @@ uint32_t sqrt_trunc(uint32_t num) {
     guess = (low+high) >> 1;
     squared = guess*guess;
 
-    if (squared == num) {
-      //done = 1;  // unnecessary
-    } else if (squared < num) {
-      low = guess;
-    } else {
-      high = guess;
+    if (squared != num) {
+      if (squared < num) {
+        low = guess;
+      } else {
+        high = guess;
+      }
     }
     DEBUG && printf(" sqrt(%d) =?%6u, sq=%11u, err=%+12ld, l= %u, h=%6u\n",
                     num, guess, squared, (long)squared - num, low, high);
-  } while (!done && (last_guess != guess));
+  } while (last_guess != guess);
   return guess;
 }
 
