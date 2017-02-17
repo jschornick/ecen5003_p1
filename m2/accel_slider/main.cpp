@@ -16,6 +16,8 @@
 #define TSI_ELEC1 PTB17  // TSIO_CH10
 #define TSI_RANGE 40
 
+#define UPDATE_HZ 50  // How often to update the sensors and output
+
 int main(void) {
 
   MMA8451Q accel(ACCEL_SDA, ACCEL_SCL, ACCEL_I2C_ADDR);
@@ -28,28 +30,22 @@ int main(void) {
 
   float slider;   // slider reading
   float x, y, z;  // accelerometer readings
-  float x_cal, y_cal, z_cal;  // initial accelerometer readings for calibration
+  float x_prev, y_prev, z_prev;  // previous readings
   float sensitivity = 0.5;    // accelerometer value multiplier, set by slider
   
-  // reduce PWM period from default of 20ms
+  // reduce PWM period from default of 20ms, reduces strobing
   green_led.period_ms(1);
   blue_led.period_ms(1);
   red_led.period_ms(1);
   
-  // let the device settle then read the resting accelerometer values
-  wait(1.0);
-  x_cal = accel.getAccX();
-  y_cal = accel.getAccY();
-  z_cal = accel.getAccZ();
-
   while (true) {
 
     slider = tsi.readPercentage();
     
-    // Get acceleration values in relative G's (2.0G max)
-    x = accel.getAccX() - x_cal;
-    y = accel.getAccY() - y_cal;
-    z = accel.getAccZ() - z_cal;
+    // Get acceleration values in G's (2.0G max)
+    x = accel.getAccX();
+    y = accel.getAccY();
+    z = accel.getAccZ();
 
     if (slider > 0) {
 			red_led = 1.0 - slider;
@@ -58,12 +54,17 @@ int main(void) {
 			printf("Slider: %1.2f\r\n", slider);
       sensitivity = 2.0 * slider;
     } else {
-      red_led = 1.01 - sensitivity * abs(x);
-      green_led = 1.01 - sensitivity * abs(y);
-      blue_led = 1.01 - sensitivity *  abs(z);
+      red_led = 1.01 - sensitivity * abs(x - x_prev);
+      green_led = 1.01 - sensitivity * abs(y - y_prev);
+      blue_led = 1.01 - sensitivity *  abs(z - z_prev);
       printf("X: %+1.3f, Y: %+1.3f, Z: %+1.3f\r\n", x, y, z);
     }
-    wait(0.05f);
+    
+    x_prev = x;
+    y_prev = y;
+    z_prev = z;
+    
+    wait(1/UPDATE_HZ);
   }
 
 }
