@@ -2,3 +2,6 @@ d2l_files
 *.pdf
 EventRecorderStub.scvd
 *.uvguix.*
+
+BUILD/
+*.o
