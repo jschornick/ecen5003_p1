@@ -33,23 +33,34 @@
 
 extern volatile uint16_t SwTimerIsrCounter;
 
-
 Ticker tick;             //  Creates a timer interrupt using mbed methods
- /****************      ECEN 5003 add code as indicated   ***************/
-                // Add code to control red, green and blue LEDs here
+ /****************  ECEN 5003 add code as indicated   ***************/
+// Add code to control red, green and blue LEDs here
 
+DigitalOut green_led(LED_GREEN, LED_OFF);
+DigitalOut red_led(LED_RED, LED_OFF);
+DigitalOut blue_led(LED_BLUE, LED_OFF);
+          
 Serial pc(USBTX, USBRX);
 
-void flip()
+// Heartbeat to be called in timer0
+void toggle_red_heartbeat()
 {
-  //greenLED = !greenLED;
+  red_led = !red_led;
+  red_heartbeat_flag = 0;
+}
+
+// Monitor heartbeat
+void toggle_green_led() {
+  green_led = !green_led;
 }
 
 int main()
 {
   /****************  ECEN 5003 add code as indicated   ***************/
   //  Add code to call timer0 function every 100 uS
-
+  tick.attach(&timer0, T100US_IN_SECS);  
+  
   uint32_t  count = 0;
 
   // initialize serial buffer pointers
@@ -76,27 +87,26 @@ int main()
   */
 
 
-  while(1)       // Cyclical Executive Loop
+  // Cyclical Executive Loop
+  while(1)  
   {
-
-    count++;                  // counts the number of times through the loop
+    count++;  // counts the number of times through the loop
     // __enable_interrupts();
     // __clear_watchdog_timer();
 
-   /****************      ECEN 5003 add code as indicated   ***************/
-   // uncomment this section after adding monitor code.
-   /*
-     serial();            // Polls the serial port
-     chk_UART_msg();     // checks for a serial port message received
-     monitor();           // Sends serial port output messages depending
-                         //  on commands received and display mode
+   /****************  ECEN 5003 add code as indicated   ***************/ 
+   serial();        // Polls the serial port
+   chk_UART_msg();  // checks for a serial port message received
+   monitor();       // Sends serial port output messages depending
+                    //   on commands received and display mode
 
     if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
-    */
     {
-      flip();  // Toggle Green LED
+      //toggle_green_led();
     }
-
+    if ( red_heartbeat_flag ) {
+      toggle_red_heartbeat();
+    }
   }
 
 }

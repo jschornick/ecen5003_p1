@@ -85,26 +85,29 @@ extern "C" {
 /*   Definitions     */
 /*********************/
 
-volatile    UCHAR swtimer0 = 0;
-volatile    UCHAR swtimer1 = 0;
-volatile    UCHAR swtimer2 = 0;
-volatile    UCHAR swtimer3 = 0;
-volatile    UCHAR swtimer4 = 0;
-volatile    UCHAR swtimer5 = 0;
-volatile    UCHAR swtimer6 = 0;
-volatile    UCHAR swtimer7 = 0;
+volatile UCHAR swtimer0 = 0;
+volatile UCHAR swtimer1 = 0;
+volatile UCHAR swtimer2 = 0;
+volatile UCHAR swtimer3 = 0;
+volatile UCHAR swtimer4 = 0;
+volatile UCHAR swtimer5 = 0;
+volatile UCHAR swtimer6 = 0;
+volatile UCHAR swtimer7 = 0;
 
 volatile uint16_t SwTimerIsrCounter = 0U;
-UCHAR  display_timer = 0;  // 1 second software timer for display
-UCHAR  display_flag = 0;   // flag between timer interrupt and monitor.c, like
+UCHAR display_timer = 0;  // 1 second software timer for display
+UCHAR display_flag = 0;   // flag between timer interrupt and monitor.c, like
                            // a binary semaphore
+                           
+UCHAR red_heartbeat_timer = 0;
+volatile UCHAR red_heartbeat_flag = 0;
 
-static   uint32_t System_Timer_count = 0; // 32 bits, counts for
+static uint32_t System_Timer_count = 0; // 32 bits, counts for
                                           // 119 hours at 100 us period
-static   uint16_t timer0_count = 0; // 16 bits, counts for
+static uint16_t timer0_count = 0; // 16 bits, counts for
                                    // 6.5 seconds at 100 us period
-static   UCHAR timer_state = 0;
-static   UCHAR long_time_state = 0;
+static UCHAR timer_state = 0;
+static UCHAR long_time_state = 0;
 //  variable which splits timer_states into groups
 //  tasks are run in their assigned group times
 //    DigitalOut BugMe (PTB9);   // debugging information out on PTB9
@@ -243,12 +246,19 @@ void timer0(void)
      if (display_timer == 1)
        display_flag = 1;     // every 1.6384 seconds, now OK to display
 
-
      //    B. Heartbeat/ LED outputs
      //   Generate Outputs  ************************************
 
      // *** ECEN 5003 add code as indicated ***
      // Create an 0.5 second RED LED heartbeat here.
+     
+     // Timer runs down from RED_HEARTBEAT_RESET (78), for a total of 0.4992
+     // seconds between heartbeat toggles. Flag is reset after toggle.
+     red_heartbeat_timer--; // 
+     if(red_heartbeat_timer == 1) {
+       red_heartbeat_flag = 1;  // indicate that we should toggle the heartbeat
+       red_heartbeat_timer = RED_HEARTBEAT_RESET;
+     }
 
    }   // end 6.4 ms group B
 

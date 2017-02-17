@@ -29,7 +29,7 @@
 
  #include "mbed.h"
 
- /*****************************************************************************
+/*****************************************************************************
 * #defines available to all modules included here
 ******************************************************************************/
 #define OFF 0                       /* used for readability */
@@ -37,6 +37,11 @@
 #define NO 0                        /* used for readability */
 #define YES 1                       /* used for readability */
 #define TEN 10
+
+#define LED_ON 0
+#define LED_OFF 1
+
+#define T100US_IN_SECS 0.0001  /* 100 microseconds in seconds */
 
 #define TIMER0 TMR0
 #define SEC 10000           /* 10000 timer0 interrupts per second (100 usec.) */
@@ -69,14 +74,17 @@ extern "C" {
 extern unsigned char Error_status;          // Variable for debugging use
 extern UCHAR  display_timer;  // 1 second software timer for display
 extern UCHAR  display_flag;   // flag between timer interrupt and monitor.c, like
-                        // a binary semaphore
+                              // a binary semaphore
 extern UCHAR tx_in_progress;
-extern UCHAR *rx_in_ptr; /* pointer to the receive in data */
+extern UCHAR *rx_in_ptr;  /* pointer to the receive in data */
 extern UCHAR *rx_out_ptr; /* pointer to the receive out data*/
-extern UCHAR *tx_in_ptr; /* pointer to the transmit in data*/
-extern UCHAR *tx_out_ptr; /*pointer to the transmit out */
-#define RX_BUF_SIZE 10            /* size of receive buffer in bytes */
-#define TX_BUF_SIZE 40           /* size of transmit buffer in bytes */
+extern UCHAR *tx_in_ptr;  /* pointer to the transmit in data*/
+extern UCHAR *tx_out_ptr; /* pointer to the transmit out */
+#define RX_BUF_SIZE 10    /* size of receive buffer in bytes */
+#define TX_BUF_SIZE 40    /* size of transmit buffer in bytes */
+
+extern volatile UCHAR red_heartbeat_flag; /* flag set when heartbeat should toggle */
+#define RED_HEARTBEAT_RESET 78  /* 6.4ms * 78 = 0.4992 sec */
 
 /******************************************************************************
 * Some variable definitions are done in the module main.c and are externed in
