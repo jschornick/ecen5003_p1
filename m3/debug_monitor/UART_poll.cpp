@@ -8,19 +8,19 @@
 -------------------------------------------------------------------------------
 --
 --  Designed for:  University of Colorado at Boulder
---               
---                
+--
+--
 --  Designed by:  Tim Scherr
---  Revised by:  Student's name 
--- 
+--  Revised by :  Jeff Schornick
+--
 -- Version: 2.0
--- Date of current revision:  2016-09-29   
--- Target Microcontroller: Freescale MKL25ZVMT4 
+-- Date of current revision:  2016-09-29
+-- Target Microcontroller: Freescale MKL25ZVMT4
 -- Tools used:  ARM mbed compiler
 --              ARM mbed SDK
 --              Freescale FRDM-KL25Z Freedom Board
---               
--- 
+--
+--
 --  Functional Description:  This file contains routines that support messages
 --    to and from the UART port.  Included are:
 --       Serial() - a routine to send/receive bytes on the UART port to
@@ -30,21 +30,18 @@
 --                      buffer
 --       UART_msg_put() - a routine that puts a string in the transmit buffer
 --       UART_direct_msg_put() - routine that sends a string out the UART port
---       UART_input() - determines if a character has been received 
---       UART_hex_put() - a routine that puts a hex byte in the transmit buffer        
+--       UART_input() - determines if a character has been received
+--       UART_hex_put() - a routine that puts a hex byte in the transmit buffer
 --
---      Copyright (c) 2015 Tim Scherr  All rights reserved.
+--  Copyright (c) 2015 Tim Scherr  All rights reserved.
 --
-*/              
+*/
 
 
 
 /*******************/
 /*  Configurations */
 /*******************/
-/*
-
-*/
 
 #include <stdio.h>
 #include "shared.h"
@@ -60,29 +57,29 @@
 #define TXREG UART0->D                        // Transmit Data Register
 #define TRMT (UART0->S1 & UARTLP_S1_TC_MASK)   // Transmit Shift Register Empty
 
-/*********************************** 
- *        Start of code            * 
+/***********************************
+ *        Start of code            *
  ***********************************/
 
- UCHAR error_count = 0;
+UCHAR error_count = 0;
 
-void serial(void)       // The serial function polls the serial port for 
+void serial(void)       // The serial function polls the serial port for
                         // received data or data to transmit
 {
                          // deals with error handling first
    if ( OERR )           // if an overrun error, clear it and continue.
    {
-      error_count++;         
+      error_count++;
                             // resets and sets continous receive enable bit
       UART0->C2 = UART0->C2 & (!UARTLP_C2_RE_MASK);
       UART0->C2 = UART0->C2 | UARTLP_C2_RE_MASK;
    }
-   
+
    if ( FERR){       // if a framing error, read bad byte, clear it and continue.
       error_count++;
-      RCREG;         // This will also clear RCIF if only one byte has been 
+      RCREG;         // This will also clear RCIF if only one byte has been
                      // received since the last int, which is our assumption.
-                     
+
                      // resets and sets continous receive enable bit
       UART0->C2 = UART0->C2 & (!UARTLP_C2_RE_MASK);
       UART0->C2 = UART0->C2 | UARTLP_C2_RE_MASK;
@@ -93,31 +90,31 @@ void serial(void)       // The serial function polls the serial port for
       {             // Read byte to enable reception of more bytes
                     // For PIC, RCIF automatically cleared when RCREG is read
                     // Also true of Freescale KL25Z
-         *rx_in_ptr++ = RCREG;         /* get received character */    
+         *rx_in_ptr++ = RCREG;         /* get received character */
          if( rx_in_ptr >= RX_BUF_SIZE + rx_buf )
          {
-            rx_in_ptr = rx_buf;    /* if at end of buffer, circles rx_in_ptr 
-                                      to top of buffer */ 
-         } 
+            rx_in_ptr = rx_buf;    /* if at end of buffer, circles rx_in_ptr
+                                      to top of buffer */
+         }
 
-      }     
+      }
    }
-   
-   if (TXIF)          //  Check if transmit buffer empty  
+
+   if (TXIF)          //  Check if transmit buffer empty
    {
       if ((tx_in_ptr != tx_out_ptr) && (display_mode != QUIET))
       {
          TXREG = *tx_out_ptr++;     /* send next char */
          if( tx_out_ptr >= TX_BUF_SIZE + tx_buf )
-            tx_out_ptr = tx_buf;           /* 0 <= tx_out_idx < TX_BUF_SIZE */        
-         tx_in_progress = YES;          /* flag needed to start up after idle */
+            tx_out_ptr = tx_buf;     /* 0 <= tx_out_idx < TX_BUF_SIZE */
+         tx_in_progress = YES;       /* flag needed to start up after idle */
       }
       else
       {
-         tx_in_progress = NO;             /* no more to send */
+         tx_in_progress = NO;   /* no more to send */
       }
-  }                   
-//  serial_count++;         // increment serial counter, for debugging only
+  }
+  //  serial_count++;         // increment serial counter, for debugging only
   serial_flag = 1;        // and set flag
 }
 
@@ -139,49 +136,49 @@ void UART_direct_msg_put(const char *str)
 }
 
 /*******************************************************************************
-* The function UART_put puts a byte, to the transmit buffer at the location 
+* The function UART_put puts a byte, to the transmit buffer at the location
 * pointed to by tx_in_idx.  The pointer is incremented circularly as described
-* previously.  If the transmit buffer should wrap around (should be designed 
+* previously.  If the transmit buffer should wrap around (should be designed
 * not to happen), data will be lost.  The serial interrupt must be temporarily
-* disabled since it reads tx_in_idx and this routine updates tx_in_idx which is 
-* a 16 bit value.           
+* disabled since it reads tx_in_idx and this routine updates tx_in_idx which is
+* a 16 bit value.
 *******************************************************************************/
 void UART_put(UCHAR c)
 {
    *tx_in_ptr++ = c;                    /* save character to transmit buffer */
    if( tx_in_ptr >= TX_BUF_SIZE + tx_buf)
-      tx_in_ptr = tx_buf;                     /* 0 <= tx_in_idx < TX_BUF_SIZE */          
+      tx_in_ptr = tx_buf;                     /* 0 <= tx_in_idx < TX_BUF_SIZE */
 }
 
 /*******************************************************************************
 * The function UART_get gets the next byte if one is available from the receive
-* buffer at the location pointed to by rx_out_idx.  The pointer is circularly 
-* incremented and the byte is returned in R7. Should no byte be available the 
-* function will wait until one is available. There is no need to disable the 
-* serial interrupt which modifies rx_in_idx since the function is looking for a 
+* buffer at the location pointed to by rx_out_idx.  The pointer is circularly
+* incremented and the byte is returned in R7. Should no byte be available the
+* function will wait until one is available. There is no need to disable the
+* serial interrupt which modifies rx_in_idx since the function is looking for a
 * compare only between rx_in_idx & rx_out_idx.
 *******************************************************************************/
 UCHAR UART_get(void)
 {
    UCHAR c;
-   while( rx_in_ptr == rx_out_ptr );      /* wait for a received character, 
+   while( rx_in_ptr == rx_out_ptr );      /* wait for a received character,
                                                                 indicated */
                                           // when pointers are different
-                                          // this could be an infinite loop, but 
-                                          // is not because of UART_input check   
+                                          // this could be an infinite loop, but
+                                          // is not because of UART_input check
    c = *rx_out_ptr++;
    if( rx_out_ptr >= RX_BUF_SIZE + rx_buf )  // if at end of buffer
    {
-      rx_out_ptr = rx_buf;                /* 0 <= rx_out_idx < RX_BUF_SIZE */        
+      rx_out_ptr = rx_buf;                /* 0 <= rx_out_idx < RX_BUF_SIZE */
                                         // return byte from beginning of buffer
-   }                                    // next time.  
+   }                                    // next time.
    return(c);
 }
 
 /*******************************************************************************
-* The function UART_input returns a 1 if 1 or more receive byte(s) is(are) 
-* available and a 0 if the receive buffer rx_buf is empty.  There is no need to 
-* disable the serial interrupt which modifies rx_in_idx since function is 
+* The function UART_input returns a 1 if 1 or more receive byte(s) is(are)
+* available and a 0 if the receive buffer rx_buf is empty.  There is no need to
+* disable the serial interrupt which modifies rx_in_idx since function is
 * looking for a compare only between rx_in_idx & rx_out_idx.
 *******************************************************************************/
 UCHAR UART_input(void)
@@ -202,14 +199,14 @@ void UART_msg_put(const char *str)
    {
       *tx_in_ptr++ = *str++;        /* save character to transmit buffer */
       if( tx_in_ptr >= TX_BUF_SIZE + tx_buf)
-         tx_in_ptr = tx_buf;                  /* 0 <= tx_in_idx < TX_BUF_SIZE */        
-   }   
+         tx_in_ptr = tx_buf;                  /* 0 <= tx_in_idx < TX_BUF_SIZE */
+   }
 }
 
 
 /*******************************************************************************
 * The function UART_low_nibble_put puts the low nibble of a byte in hex through
-* the transmit buffer to the UART port.             
+* the transmit buffer to the UART port.
 *******************************************************************************/
 //void UART_low_nibble_put(UCHAR c)
 //{
@@ -249,7 +246,7 @@ UCHAR asc_to_hex(UCHAR c)
 
 
 /*******************************************************************************
-* The function UART_hex_put puts 1 byte in hex through the transmit buffer to 
+* The function UART_hex_put puts 1 byte in hex through the transmit buffer to
 * the UART port.
 *******************************************************************************/
 void UART_hex_put(unsigned char c)
@@ -260,7 +257,7 @@ void UART_hex_put(unsigned char c)
 }
 
 /*******************************************************************************
-* The function UART_direct_hex_put puts 1 byte in hex directly (no ram buffer) 
+* The function UART_direct_hex_put puts 1 byte in hex directly (no ram buffer)
 * to the UART.
 *******************************************************************************/
 void UART_direct_hex_put(unsigned char c)
@@ -276,5 +273,4 @@ void UART_direct_hex_put(unsigned char c)
     //  __clear_watchdog_timer();
    }
 }
-
 
