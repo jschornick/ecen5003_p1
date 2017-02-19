@@ -3,7 +3,7 @@
 --              ECEN 5003 Mastering Embedded System Architecture             --
 --                  Project 1 Module 3                                       --
 --                Microcontroller Firmware                                   --
---                      main.cpp                                            --
+--                      main.cpp                                             --
 --                                                                           --
 -------------------------------------------------------------------------------
 --
@@ -27,11 +27,16 @@
 --
 */
 
-#define MAIN
-#include "shared.h"
-#undef MAIN
+#include "timer.h"
+#include "monitor.h"
+#include "uart.h"
 
-extern volatile uint16_t SwTimerIsrCounter;
+#include "drivers/Ticker.h"
+#include "drivers/DigitalOut.h"
+using namespace mbed;
+
+#define LED_ON 0
+#define LED_OFF 1
 
 Ticker tick;  //  Creates a timer interrupt using mbed methods
 
@@ -59,34 +64,26 @@ int main()
 
   uint32_t  count = 0;
 
-  // initialize serial buffer pointers
-  rx_in_ptr =  rx_buf;  /* pointer to the receive in data */
-  rx_out_ptr = rx_buf;  /* pointer to the receive out data */
-  tx_in_ptr =  tx_buf;  /* pointer to the transmit in data */
-  tx_out_ptr = tx_buf;  /* pointer to the transmit out */
+  uart_init();
 
-  /****************  ECEN 5003 add code as indicated  ***************/
-  /* send a message to the terminal  */
-  UART_direct_msg_put("\r\nSystem Reset\r\nCode ver. ");
-  UART_direct_msg_put( CODE_VERSION );
-  UART_direct_msg_put("\r\n");
-  UART_direct_msg_put( COPYRIGHT );
-  UART_direct_msg_put("\r\n");
+  /* startup message  */
+  uart_direct_msg_put("\r\nSystem Reset\r\nCode ver. ");
+  uart_direct_msg_put( CODE_VERSION );
+  uart_direct_msg_put("\r\n");
+  uart_direct_msg_put( COPYRIGHT );
+  uart_direct_msg_put("\r\n");
 
-  set_display_mode();
+  display_menu();
 
   // Cyclical Executive Loop
   while(1)
   {
     count++;  // counts the number of times through the loop
-    // __enable_interrupts();
-    // __clear_watchdog_timer();
 
-   /****************  ECEN 5003 add code as indicated  ***************/
-   serial();        // Polls the serial port
-   chk_UART_msg();  // checks for a serial port message received
-   monitor();       // Sends serial port output messages depending
-                    //   on commands received and display mode
+    /****************  ECEN 5003 add code as indicated  ***************/
+    uart_poll();  // Polls the serial port
+    read_message_from_uart();  // checks for a serial port message received
+    monitor();       // Sends serial port output messages depending
 
     if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
     {

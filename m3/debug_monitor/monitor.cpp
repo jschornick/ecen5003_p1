@@ -27,8 +27,17 @@
 --
 */
 
-#include <stdio.h>
-#include "shared.h"
+#include "uart.h"
+#include "monitor.h"
+
+int stack_flag = 0;
+int memory_flag = 0;
+
+#define MSG_BUF_SIZE 10
+UCHAR msg_buf[MSG_BUF_SIZE]; // define the storage for UART received messages
+UCHAR msg_buf_idx = 0;    // index into the received message buffer
+
+enum dmode display_mode = DEBUG;
 
 /*******************************************************************************
 * Set Display Mode Function
@@ -48,37 +57,43 @@
 * to be plugged into the header without causing problems.
 *******************************************************************************/
 
-void set_display_mode(void)
+void display_menu(void)
 {
-  UART_direct_msg_put("\r\nSelect Mode");
-  UART_direct_msg_put("\r\n Hit NOR - Normal");
-  UART_direct_msg_put("\r\n Hit QUI - Quiet");
-  UART_direct_msg_put("\r\n Hit DEB - Debug" );
-  UART_direct_msg_put("\r\n Hit V - Version#\r\n");
-  UART_direct_msg_put("\r\nSelect:  ");
+  uart_direct_msg_put("\r\n");
+  uart_direct_msg_put("Main menu\r\n");
+  uart_direct_msg_put("N - Normal\r\n");
+  uart_direct_msg_put("Q - Quiet\r\n");
+  uart_direct_msg_put("D - Debug\r\n" );
+  uart_direct_msg_put("V - Version\r\n");
+  uart_direct_msg_put("Select:");
 }
 
 
 //******************************************************************************
 // UART Input Message
 //******************************************************************************
-void chk_UART_msg(void)
+void read_message_from_uart(void)
 {
-   UCHAR j;
-   while( UART_input() )      // becomes true only when a byte has been received
-   {                          // skip if no characters pending
-      j = UART_get();         // get next character
+  UCHAR j;
+  while( uart_input() )      // while we have unprocessed data in the rx buffer  
+  {
+    j = uart_get();         // get next character
+    msg_buf[msg_buf_idx++] = j;
+    process_message();
+    break;
 
+
+      // if multi-char mode...
       if( j == '\r' )         // on a enter (return) key press
       {                       // complete message (all messages end in carriage return)
-         UART_msg_put("->");
-         UART_msg_process();
+         uart_msg_put("->");
+         process_message();
       }
       else
       {
          if ((j != 0x02) )   // if not ^B
          {                   // if not command, then
-            UART_put(j);     // echo the character
+            uart_put(j);     // echo the character
          }
          else
          {
@@ -88,13 +103,13 @@ void chk_UART_msg(void)
          {                          // backspace editor
             if( msg_buf_idx != 0)
             {                       // if not 1st character then destructive
-               UART_msg_put(" \b"); // backspace
+               uart_msg_put(" \b"); // backspace
                msg_buf_idx--;
             }
          }
          else if( msg_buf_idx >= MSG_BUF_SIZE )
          {                                // check message length too large
-            UART_msg_put("\r\nToo Long!");
+            uart_msg_put("\r\nToo Long!");
             msg_buf_idx = 0;
          }
          else if ((display_mode == QUIET) && (msg_buf[0] != 0x02) &&
@@ -108,10 +123,6 @@ void chk_UART_msg(void)
 
             msg_buf[msg_buf_idx] = j;
             msg_buf_idx++;
-            if (msg_buf_idx > 2)
-            {
-               UART_msg_process();
-            }
          }
       }
    }
@@ -120,76 +131,53 @@ void chk_UART_msg(void)
 //********************************************************************************************************
 // UART Input Message Processing
 //********************************************************************************************************
-void UART_msg_process(void)
+void process_message(void)
 {
-   UCHAR chr,err=0;
+  UCHAR chr;
+  UCHAR err=0;
 
-   if( (chr = msg_buf[0]) <= 0x60 )
-   {      // Upper Case
-      switch( chr )
-      {
-         case 'D':
-            if((msg_buf[1] == 'E') && (msg_buf[2] == 'B') && (msg_buf_idx == 3))
-            {
-               display_mode = DEBUG;
-               UART_msg_put("\r\nMode=DEBUG\n");
-               display_timer = 0;
-            }
-            else
-               err = 1;
-            break;
+  chr = msg_buf[0];
+  if ((chr >= 'a' ) && (chr <= 'z'))  {
+    chr -= ('a' - 'A');  // capitalize
+  }
 
-         case 'N':
-            if((msg_buf[1] == 'O') && (msg_buf[2] == 'R') && (msg_buf_idx == 3))
-            {
-               display_mode = NORMAL;
-               UART_msg_put("\r\nMode=NORMAL\n");
-               //display_timer = 0;
-            }
-            else
-               err = 1;
-            break;
+  switch( chr ) {
+    case 'D':
+      display_mode = DEBUG;
+        uart_msg_put("\r\nMode=DEBUG\r\n");
+        display_timer = 0;
+        break;
 
-         case 'Q':
-            if((msg_buf[1] == 'U') && (msg_buf[2] == 'I') && (msg_buf_idx == 3))
-            {
-               display_mode = QUIET;
-               UART_msg_put("\r\nMode=QUIET\n");
-               display_timer = 0;
-            }
-            else
-               err = 1;
-            break;
+    case 'N':
+      display_mode = NORMAL;
+      uart_msg_put("\r\nMode=NORMAL\r\n");
+      //display_timer = 0;
+      break;
 
-         case 'V':
-            display_mode = VERSION;
-            UART_msg_put("\r\n");
-            UART_msg_put( CODE_VERSION );
-            UART_msg_put("\r\nSelect  ");
-            display_timer = 0;
-            break;
+    case 'Q':
+      display_mode = QUIET;
+      uart_msg_put("\r\nMode=QUIET\r\n");
+      display_timer = 0;
+      break;
 
-         default:
-            err = 1;
-      }
-   }
-
-   else
-   {                 // Lower Case
-      switch( chr )
-      {
-        default:
-         err = 1;
-      }
-   }
+    case 'V':
+      display_mode = VERSION;
+      uart_msg_put("\r\n");
+      uart_msg_put( CODE_VERSION );
+      uart_msg_put("\r\nSelect  ");
+      display_timer = 0;
+      break;
+    default:
+      err = 1;
+  }
 
    if( err == 1 )
    {
-      UART_msg_put("\n\rError!");
+      display_menu();
    }
    else if( err == 2 )
    {
-      UART_msg_put("\n\rNot in DEBUG Mode!");
+      uart_msg_put("\n\rNot in DEBUG Mode!");
    }
    else
    {
@@ -253,14 +241,14 @@ void display_registers(void) {
   regs[0] = r0();
   get_regs(regs+1); // r1-15
 
-  UART_msg_put("\r\nRegisters:\r\n");
+  uart_msg_put("\r\nRegisters:\r\n");
   for(int regnum=0; regnum<REG_COUNT; regnum++) {
-    UART_msg_put(" R");
-    UART_put('0' + regnum/10);
-    UART_put('0' + regnum%10);
-    UART_msg_put(": ");
-    UART_hex_word_put(regs[regnum]);
-    UART_msg_put("\r\n");
+    uart_msg_put(" R");
+    uart_put('0' + regnum/10);
+    uart_put('0' + regnum%10);
+    uart_msg_put(": ");
+    uart_hex_word_put(regs[regnum]);
+    uart_msg_put("\r\n");
   }
 }
 
@@ -271,11 +259,11 @@ void display_registers(void) {
 // Display the 32-bit value at the specified memory address.
 void display_memory(int addr) {
   int val = *((int *) addr);
-  UART_msg_put("\r\nMEM(0x");
-  UART_hex_word_put(addr);
-  UART_msg_put("):\r\n");
-  UART_hex_word_put(val);
-  UART_msg_put("\r\n");
+  uart_msg_put("\r\nMEM(0x");
+  uart_hex_word_put(addr);
+  uart_msg_put("):\r\n");
+  uart_hex_word_put(val);
+  uart_msg_put("\r\n");
 }
 
 //******************************************************************************
@@ -292,10 +280,10 @@ void display_stack(void) {
   int *stack_base = (int *) *( (int *) 0x0);  // deference MSP to get top of stack
   //int x;
   
-  UART_msg_put("\r\nStack:\r\n");
+  uart_msg_put("\r\nStack:\r\n");
   for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
-    UART_hex_word_put( *stack_ptr );
-    UART_msg_put("\r\n");
+    uart_hex_word_put( *stack_ptr );
+    uart_msg_put("\r\n");
   }
 }
 
@@ -309,7 +297,7 @@ void monitor(void)
   switch(display_mode)
   {
     case(QUIET):
-      UART_msg_put("\r\n ");
+      //uart_msg_put("\r\n ");
       display_flag = 0;
       break;
     case(VERSION):
@@ -318,28 +306,28 @@ void monitor(void)
     case(NORMAL):
       if (display_flag == 1)
         {
-          UART_msg_put("\r\nNORMAL ");
-          UART_msg_put(" Flow: ");
+          uart_msg_put("\r\nNORMAL ");
+          uart_msg_put(" Flow: ");
           // *** ECEN 5003 add code as indicated ***
-          // add flow data output here, use UART_hex_put or similar for numbers
-          UART_msg_put(" Temp: ");
-          //  add flow data output here, use UART_hex_put or similar for numbers
-          UART_msg_put(" Freq: ");
-          // add flow data output here, use UART_hex_put or similar for numbers
+          // add flow data output here, use uart_hex_put or similar for numbers
+          uart_msg_put(" Temp: ");
+          //  add flow data output here, use uart_hex_put or similar for numbers
+          uart_msg_put(" Freq: ");
+          // add flow data output here, use uart_hex_put or similar for numbers
           display_flag = 0;
         }
       break;
     case(DEBUG):
       if (display_flag == 1)
         {
-          UART_msg_put("\r\nDEBUG ");
-          UART_msg_put(" Flow: ");
+          uart_msg_put("\r\nDEBUG ");
+          uart_msg_put(" Flow: ");
           // ECEN 5003 add code as indicated
-          // add flow data output here, use UART_hex_put or similar for numbers
-          UART_msg_put(" Temp: ");
-          // add flow data output here, use UART_hex_put or similar for numbers
-          UART_msg_put(" Freq: ");
-          // add flow data output here, use UART_hex_put or similar for numbers
+          // add flow data output here, use uart_hex_put or similar for numbers
+          uart_msg_put(" Temp: ");
+          // add flow data output here, use uart_hex_put or similar for numbers
+          uart_msg_put(" Freq: ");
+          // add flow data output here, use uart_hex_put or similar for numbers
 
           /****************  ECEN 5003 add code as indicated  ***************/
           // Create a display of  error counts, sensor states, and ARM Registers R0-R15
@@ -355,6 +343,6 @@ void monitor(void)
       }
       break;
     default:
-      UART_msg_put("Mode Error");
+      uart_msg_put("Mode Error");
   }
 }
