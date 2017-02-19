@@ -81,7 +81,8 @@ extern UCHAR *rx_out_ptr; /* pointer to the receive out data*/
 extern UCHAR *tx_in_ptr;  /* pointer to the transmit in data*/
 extern UCHAR *tx_out_ptr; /* pointer to the transmit out */
 #define RX_BUF_SIZE 10    /* size of receive buffer in bytes */
-#define TX_BUF_SIZE 40    /* size of transmit buffer in bytes */
+//#define TX_BUF_SIZE 40    /* size of transmit buffer in bytes */
+#define TX_BUF_SIZE 500    /* size of transmit buffer in bytes */
 
 extern volatile UCHAR red_heartbeat_flag; /* flag set when heartbeat should toggle */
 #define RED_HEARTBEAT_RESET 78  /* 6.4ms * 78 = 0.4992 sec */
@@ -92,7 +93,8 @@ extern volatile UCHAR red_heartbeat_flag; /* flag set when heartbeat should togg
 ******************************************************************************/
 #ifdef MAIN
 
-enum dmode display_mode = QUIET;
+//enum dmode display_mode = QUIET;
+enum dmode display_mode = DEBUG;
 
 UCHAR serial_flag = 0;
 
