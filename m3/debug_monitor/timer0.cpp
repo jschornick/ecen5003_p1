@@ -55,7 +55,7 @@
    VII  3.2 ms group
       A. Slow Software Timers
     VIII 6.4 ms group A
-      A. Very Slow Software Timers
+       A. Very Slow Software Timers
    IX.  Long time group
       A. Determine Mode
       B. Heartbeat/ LED outputs
@@ -97,8 +97,8 @@ volatile UCHAR swtimer7 = 0;
 volatile uint16_t SwTimerIsrCounter = 0U;
 UCHAR display_timer = 0;  // 1 second software timer for display
 UCHAR display_flag = 0;   // flag between timer interrupt and monitor.c, like
-                           // a binary semaphore
-                           
+                          // a binary semaphore
+
 UCHAR red_heartbeat_timer = 0;
 volatile UCHAR red_heartbeat_flag = 0;
 
@@ -251,11 +251,11 @@ void timer0(void)
 
      // *** ECEN 5003 add code as indicated ***
      // Create an 0.5 second RED LED heartbeat here.
-     
+
      // Timer runs down from RED_HEARTBEAT_RESET (78), for a total of 0.4992
      // seconds between heartbeat toggles. Flag is reset after toggle.
-     red_heartbeat_timer--; // 
-     if(red_heartbeat_timer == 1) {
+     red_heartbeat_timer--;
+     if(red_heartbeat_timer == 0) {
        red_heartbeat_flag = 1;  // indicate that we should toggle the heartbeat
        red_heartbeat_timer = RED_HEARTBEAT_RESET;
      }
