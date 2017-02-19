@@ -218,29 +218,43 @@ UCHAR is_hex(UCHAR c)
 
 // Get register r0. No parameters to disturb its value.
 __asm int r0(void) {
-  MOV r0, r0
   BX lr
 }
 
-// Dump remaining registers to memory location specified by r0;
-__asm void get_regs(volatile int *regs) {
+// Dump registers r1-r15 to memory location specified by r0
+__asm void get_regs(int *regs) {
   STM r0!, {r1-r7}  ; store the lo registers
   MOV r1, r8
-  STR r1, [r0]
-  ADDS r0, r0, #4
+  STR r1, [r0]      ; store r8 (r0 was advanced by STM)
   MOV r1, r9
-  STR r1, [r0]
+  STR r1, [r0, #4]
+  MOV r1, r10
+  STR r1, [r0, #8]
+  MOV r1, r11
+  STR r1, [r0, #12]
+  MOV r1, r12
+  STR r1, [r0, #16]
+  MOV r1, r13
+  STR r1, [r0, #20]
+  MOV r1, r14
+  STR r1, [r0, #24]
+  MOV r1, r15
+  STR r1, [r0, #28]
   BX lr
 }
 
+// Display the CPU registers.
+// Note that the reported values of r13-r15 (sp, lr, pc) will be tainted by
+// the call to this function.
 void display_registers(void) {
-  volatile int regs[13];
+  const char REG_COUNT=16;
+  int regs[REG_COUNT];
 
   regs[0] = r0();
-  get_regs(regs+1); // r1-12
+  get_regs(regs+1); // r1-15
 
   UART_msg_put("\r\nRegisters:\r\n");
-  for(int regnum=0; regnum<13; regnum++) {
+  for(int regnum=0; regnum<REG_COUNT; regnum++) {
     UART_msg_put(" R");
     UART_put('0' + regnum/10);
     UART_put('0' + regnum%10);
@@ -250,22 +264,23 @@ void display_registers(void) {
   }
 }
 
-__asm int peek(int addr) {
-  LDR r0, [r0]
-  BX lr
-}
+//******************************************************************************
+// ECEN5003 Memory Display
+//******************************************************************************
 
+// Display the 32-bit value at the specified memory address.
 void display_memory(int addr) {
-  int val;
-
-  val = peek(addr);
+  int val = *((int *) addr);
   UART_msg_put("\r\nMEM(0x");
   UART_hex_word_put(addr);
   UART_msg_put("):\r\n");
   UART_hex_word_put(val);
   UART_msg_put("\r\n");
-
 }
+
+//******************************************************************************
+// ECEN5003 Memory Display
+//******************************************************************************
 
 void display_stack(void) {
 }
