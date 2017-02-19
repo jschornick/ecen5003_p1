@@ -162,6 +162,7 @@ extern void UART_direct_put(UCHAR);            /* located in module UART.c */
 extern void UART_hex_put(UCHAR);               /* located in module UART.c */
 extern void UART_low_nibble_put(UCHAR);        /* located in module UART.c */
 extern void UART_high_nibble_put(UCHAR);       /* located in module UART.c */
+extern void UART_hex_word_put(unsigned int);   /* located in module UART.c */
 extern void chk_UART_msg(void);               /* located in module monitor.c */
 extern void UART_msg_process(void);          /* located in module monitors.c */
 extern void status_report(void);             /* located in module monitor.c */
