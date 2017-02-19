@@ -279,10 +279,24 @@ void display_memory(int addr) {
 }
 
 //******************************************************************************
-// ECEN5003 Memory Display
+// ECEN5003 Stack Display
 //******************************************************************************
 
+__asm int * get_sp(void) {
+  MOV r0, sp
+  BX LR
+}
+
 void display_stack(void) {
+  //cont char max_depth = 16;  // max stack depth to dump
+  int *stack_base = (int *) *( (int *) 0x0);  // deference MSP to get top of stack
+  //int x;
+  
+  UART_msg_put("\r\nStack:\r\n");
+  for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
+    UART_hex_word_put( *stack_ptr );
+    UART_msg_put("\r\n");
+  }
 }
 
 
