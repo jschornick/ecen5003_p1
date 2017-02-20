@@ -29,6 +29,7 @@
 
 #include "uart.h"
 #include "monitor.h"
+#include "timer.h"
 
 int stack_flag = 0;
 int memory_flag = 0;
@@ -82,6 +83,9 @@ void read_message_from_uart(void)
     process_message();
     break;
 
+    // TODO: continuous mode flag
+    // TODO: update_rate variable
+    // TODO: memory/stack toggle
 
       // if multi-char mode...
       if( j == '\r' )         // on a enter (return) key press
@@ -161,7 +165,6 @@ void process_message(void)
       break;
 
     case 'V':
-      display_mode = VERSION;
       uart_msg_put("\r\n");
       uart_msg_put( CODE_VERSION );
       uart_msg_put("\r\nSelect  ");
@@ -287,6 +290,18 @@ void display_stack(void) {
   }
 }
 
+// **********
+
+void display_readings() {
+  uart_msg_put(" Flow: ");
+  // *** ECEN 5003 add code as indicated ***
+  // add flow data output here, use uart_hex_put or similar for numbers
+  uart_msg_put(" Temp: ");
+  //  add flow data output here, use uart_hex_put or similar for numbers
+  uart_msg_put(" Freq: ");
+  // add flow data output here, use uart_hex_put or similar for numbers
+   
+}
 
 /*******************************************************************************
 * DEBUG and DIAGNOSTIC Mode UART Operation
@@ -297,23 +312,13 @@ void monitor(void)
   switch(display_mode)
   {
     case(QUIET):
-      //uart_msg_put("\r\n ");
-      display_flag = 0;
-      break;
-    case(VERSION):
       display_flag = 0;
       break;
     case(NORMAL):
       if (display_flag == 1)
         {
           uart_msg_put("\r\nNORMAL ");
-          uart_msg_put(" Flow: ");
-          // *** ECEN 5003 add code as indicated ***
-          // add flow data output here, use uart_hex_put or similar for numbers
-          uart_msg_put(" Temp: ");
-          //  add flow data output here, use uart_hex_put or similar for numbers
-          uart_msg_put(" Freq: ");
-          // add flow data output here, use uart_hex_put or similar for numbers
+          display_readings();
           display_flag = 0;
         }
       break;
@@ -321,13 +326,7 @@ void monitor(void)
       if (display_flag == 1)
         {
           uart_msg_put("\r\nDEBUG ");
-          uart_msg_put(" Flow: ");
-          // ECEN 5003 add code as indicated
-          // add flow data output here, use uart_hex_put or similar for numbers
-          uart_msg_put(" Temp: ");
-          // add flow data output here, use uart_hex_put or similar for numbers
-          uart_msg_put(" Freq: ");
-          // add flow data output here, use uart_hex_put or similar for numbers
+          display_readings();
 
           /****************  ECEN 5003 add code as indicated  ***************/
           // Create a display of  error counts, sensor states, and ARM Registers R0-R15
@@ -337,8 +336,6 @@ void monitor(void)
           //  Create a command to read 16 words from the current stack
           // and display it in reverse chronological order.
           display_stack();
-
-          // clear flag to ISR
           display_flag = 0;
       }
       break;

@@ -10,7 +10,6 @@
 #ifndef _TIMER_H
 #define _TIMER_H
 
-//#define System Timer_INCREMENT_IN_US 1000
 #define T100US_IN_SECS 0.0001  /* 100 microseconds in seconds */
 
 typedef unsigned char UCHAR;
@@ -32,8 +31,8 @@ extern volatile UCHAR swtimer7;
 extern volatile UCHAR red_heartbeat_flag; /* flag set when heartbeat should toggle */
 #define RED_HEARTBEAT_RESET 78  /* 6.4ms * 78 = 0.4992 sec */
 
-extern UCHAR display_timer;  // 1 second software timer for display
-extern UCHAR display_flag;   // flag between timer interrupt and monitor.c, like
+extern UCHAR display_timer;  // 1.6 seconds when reset to 0
+extern UCHAR display_flag;   // set when timer expires, cleared by monitor after output
 
 void timer0(void);
 
