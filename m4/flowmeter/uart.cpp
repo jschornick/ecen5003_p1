@@ -276,5 +276,20 @@ void uart_hex_word_put(unsigned int word) {
   }
 }
 
+void uart_dec_put(unsigned int num) {
+  // Iterate through a maximum of 10 digits
+  unsigned char digits[10];
+  unsigned char digit = 0;
+  do {
+    digits[digit] = num % 10;
+    num /= 10;
+    digit++;
+  } while (num != 0);
+  do {
+    digit--;
+    uart_put( '0' + digits[digit] );
+  } while (digit > 0); 
+}
+
 
 

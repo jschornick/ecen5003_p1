@@ -28,5 +28,6 @@ void uart_direct_hex_put(UCHAR);
 void uart_direct_put(UCHAR);
 void uart_hex_put(UCHAR);
 void uart_hex_word_put(unsigned int);
+void uart_dec_put(unsigned int);
 
 #endif
