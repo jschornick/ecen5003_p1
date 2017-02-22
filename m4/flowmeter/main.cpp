@@ -39,6 +39,8 @@ using namespace mbed;
 
 //#include "mbed.h"
 
+// won't compile if we include this before mbed files??
+#include "flow_calc.h"
 #include "adc.h"
 
 #define LED_ON 0
@@ -52,12 +54,7 @@ DigitalOut green_led(LED_GREEN, LED_OFF);
 DigitalOut red_led(LED_RED, LED_OFF);
 DigitalOut blue_led(LED_BLUE, LED_OFF);
 
-//AnalogIn ch0(PTB0);
-//AnalogIn ch1(PTB1);
-//AnalogIn ch2(PTB2);
-
 Serial pc(USBTX, USBRX);
-
 
 void red_heartbeat()
 {
@@ -108,8 +105,12 @@ int main()
     read_message_from_uart();  // checks for a serial port message received
     read_all_adcs();  // read ADC channels (if flag set)
 
-    //calculate flow()
-
+    if( display_flag ) {
+    calc_temp(adc_vals[2]);
+    calc_freq(adc_test_data, VORTEX_INPUT_SIZE);
+    calc_flow(freq, temp);
+    }
+      
     monitor();       // Sends serial port output messages depending
 
     //4-20 output ()    // use TMP0 channel 3  proporional rate to flow

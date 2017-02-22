@@ -1,0 +1,178 @@
+/*--------------------------------------------------------
+ECEN5003 - Project 1, Module 4
+  math_funcs.cpp
+ --------------------------------------------------------*/
+
+const int pow10_table[] = {
+1063,11557,
+1067,11679,
+1072,11804,
+1077,11931,
+1081,12061,
+1086,12193,
+1091,12328,
+1096,12466,
+1101,12607,
+1106,12750,
+1110,12896,
+1115,13046,
+1121,13198,
+1126,13354,
+1131,13512,
+1136,13675,
+1141,13840,
+1146,14010,
+1152,14183,
+1157,14359,
+1163,14540,
+1168,14725,
+1174,14913,
+1179,15106,
+1185,15304,
+1190,15506,
+1196,15712,
+1202,15923,
+1208,16140,
+1214,16361,
+1220,16588,
+1226,16820,
+1232,17058,
+1238,17301,
+1244,17550,
+1251,17806,
+1257,18068,
+1263,18337,
+1270,18612,
+1276,18894,
+1283,19184,
+1290,19481,
+1296,19786,
+1303,20099,
+1310,20421,
+1317,20751,
+1324,21090,
+1331,21438,
+1338,21796,
+1346,22164,
+1353,22542,
+1360,22931,
+1368,23331,
+1376,23742,
+1383,24166,
+1391,24602,
+1399,25050,
+1407,25513,
+1415,25989,
+1423,26480,
+1431,26985,
+1439,27507,
+1448,28045,
+1456,28600,
+1465,29172,
+1474,29764,
+1483,30374,
+1491,31004,
+1500,31656,
+1510,32329,
+1519,33025,
+1528,33745,
+1538,34490,
+1547,35261,
+1557,36060,
+1567,36886,
+1577,37743,
+1587,38631,
+1597,39552,
+1608,40507,
+1618,41497,
+1629,42526,
+1639,43594,
+1650,44704,
+1661,45858,
+1673,47058,
+1684,48305,
+1696,49604,
+1707,50956,
+1719,52365,
+1731,53833,
+1743,55364,
+1756,56961,
+1768,58628,
+1781,60369,
+1794,62187,
+1807,64089,
+1820,66077,
+1834,68158,
+1847,70337,
+1861,72620
+};
+
+int pow10(int num) {
+  int i = 0;
+  int result=0;
+  //return 44875;
+  //return pow10_table[167];
+  for(i = 0; i<200; i+=2) {
+    if ( pow10_table[i] < num) {
+      result = pow10_table[i+1];
+    }
+  }
+  return result;
+}
+
+
+// Finds the truncated integer square root of value passed in via r0
+//   r0 : input value / return value
+//   r1 : low search boundary
+//   r2 : high search boundary
+//   r3 : new guess
+//   r4 : previous guess
+//   r5 : square of new_guess
+__asm int sqrt(unsigned int x)
+{
+	// can we do this as skip next instruction?
+	CMP r0, #1   ; make sure we handle the edge case so sqrt(1)=1
+	BLS exit		 ; just return the input if it is 0 or 1
+	
+	MOVS r1, #0  ; low search bound starts at 0
+	MOVS r2, r0  ; use input as high search bound
+	
+	PUSH {r3, r4}
+	// store r4-r5 on stack?
+	MOVS r3, #0  ; init guess
+	MOVS r4, r0  ; make last_guess != new_guess
+	
+loop
+	
+	CMP r3, r4   ; if our guess was same as previous, we are done
+	BEQ endloop
+	
+	// update guess
+	MOVS r4, r3  ; last_guess = new_guess
+	ADDS r3, r1, r2  ; guess = low+high
+	LSRS r3, #1      ; guess/2
+	
+	MOVS r5, r3;     ; 
+  MULS r5, r5, r5  ; square of guess
+	
+	CMP r5, r0   ; if guess^2 = input, we are done
+	BEQ endloop
+	
+	// can we use IT?
+	BHI toohigh
+toolow
+	MOVS r1, r3  ; guess to low, make guess new low bound
+	B loop  ; can we do a "skip next" instead?
+toohigh
+  MOVS r2, r3  ; guess to high, make guess new high bound
+	B loop
+
+endloop
+  MOVS r0, r3  ; return guess
+	POP {r3, r4}
+
+exit
+	BX lr
+
+}
+

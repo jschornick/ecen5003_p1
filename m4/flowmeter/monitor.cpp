@@ -31,6 +31,7 @@
 #include "monitor.h"
 #include "timer.h"
 #include "adc.h"
+#include "flow_calc.h"
 
 int stack_flag = 0;
 int memory_flag = 0;
@@ -39,7 +40,7 @@ int memory_flag = 0;
 UCHAR msg_buf[MSG_BUF_SIZE]; // define the storage for UART received messages
 UCHAR msg_buf_idx = 0;    // index into the received message buffer
 
-enum dmode display_mode = ADC;
+enum dmode display_mode = NORMAL;
 
 /*******************************************************************************
 * Set Display Mode Function
@@ -302,11 +303,12 @@ void display_stack(void) {
 void display_readings() {
   uart_msg_put(" Flow: ");
   // *** ECEN 5003 add code as indicated ***
-  // add flow data output here, use uart_hex_put or similar for numbers
-  uart_msg_put(" Temp: ");
+  uart_dec_put(flow);
+  uart_msg_put("  Temp: ");
   uart_dec_put(convert_temp(adc_vals[2]));
-  uart_msg_put(" Freq: ");
-  // add freq data output here, use uart_hex_put or similar for numbers
+  uart_msg_put("  Freq: ");
+  uart_dec_put(freq);
+  uart_msg_put("\r\n");
 }
 
 // convert an ADC reading into temperature in C
