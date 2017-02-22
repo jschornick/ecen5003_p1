@@ -22,7 +22,7 @@
 //    ADxxa channels, async clock out disabled, normal conversion sequence, longest sample time
 
 // SC2 reset value : 0x 0000 0000
-//    software tirgger, compare disabled, DMA disabled, default voltage references (V_refh, Vrefl)
+//    software trigger, compare disabled, DMA disabled, default voltage references (V_refh, Vrefl)
 
 // Note: default bus clock speed is 24MHz
 
@@ -47,7 +47,7 @@ void adc_config(void) {
   //---------------------------------
   //   reset value: 0x 0000 0000
 
-  // 0x0 = clock divider = 1 (input clock)   
+  // 0x0 = clock divider = 1 (input clock)
   ADC0->CFG1 |= ADC_CFG1_ADIV(0x0);
 
   // clock source = bus clock (24Mhz default)
@@ -102,17 +102,34 @@ void adc_config(void) {
 // See: KL25 reference p494
 int adc_calibrate(void) {
 
+  // maximum averaging
+  // 0x1 = averaging enabled
+  ADC0->SC3 |= ADC_SC3_AVGE_MASK;
+  // 0x3 = 32 sample average
+  ADC0->SC3 |= ADC_SC3_AVGS_MASK;
+
+  // <4 Mhz
+  // 0x3 = clock divider = 8 (input clock/8 = 3MHz)
+  ADC0->CFG1 |= ADC_CFG1_ADIV(0x3);
+
+  // 0x0 = default voltage references (V_refh, Vrefl)
+  ADC0->SC2 |= ADC_SC2_REFSEL(0x0);
+
+  // ADTRG=0
+  ADC0->SC2 &= ~ADC_SC2_ADTRG_MASK;
+
   // Initiate calibration, set CAL=1
   ADC0->SC3 |= ADC_SC3_CAL_MASK;
 
   // Wait until calibration succeeds
   //   CAL=1 until calibration completes
-  //while( ADC0->SC3 & ADC_SC3_CAL_MASK )
-  //  ;
+  //while( ADC0->SC3 & ADC_SC3_CAL_MASK ) ;
 
   // At the end of calibration, COCO=1 (p495)
-  while( ADC0->SC1[0] & ADC_SC1_COCO_MASK )
-    ;
+  while( ADC0->SC1[0] & ADC_SC1_COCO_MASK ) ;
+
+  // success when CALF=0
+  int calf = (ADC0->SC3 & ADC_SC3_CALF_MASK) >> ADC_SC3_CALF_SHIFT;
 
   unsigned short calibration = 0;
 
@@ -141,10 +158,10 @@ int adc_calibrate(void) {
 
   ADC0->MG = calibration;
 
+  // this might clear CALF as well...
   ADC0->SC3 &= ~(ADC_SC3_CAL_MASK);
 
-  // success when CALF=0
-  return ((ADC0->SC3 & ADC_SC3_CALF_MASK) >> ADC_SC3_CALF_SHIFT);
+  return calf;
 
 }
 
@@ -160,8 +177,8 @@ unsigned int adc_read(unsigned int channel) {
   // clear channel mask bits and replace with new channel
   switch (channel) {
     case CHANNEL_0:
-      // vrefl (ADC0_SE8)
-      ADC0->SC1[0] = (ADC0->SC1[0] & ~ADC_SC1_ADCH_MASK) | ADC_SC1_ADCH(19);
+      // vrefl  (NOT ADC0_SE8)
+      ADC0->SC1[0] = (ADC0->SC1[0] & ~ADC_SC1_ADCH_MASK) | ADC_SC1_ADCH(30);
       break;
     case CHANNEL_1:
       // vortex/J10_4 (ADC0_SE9)
@@ -169,7 +186,7 @@ unsigned int adc_read(unsigned int channel) {
       break;
     case CHANNEL_2:
       // temperature (ADC0_SE12)
-      ADC0->SC1[0] = (ADC0->SC1[0] & ~ADC_SC1_ADCH_MASK) | ADC_SC1_ADCH(8);
+      ADC0->SC1[0] = (ADC0->SC1[0] & ~ADC_SC1_ADCH_MASK) | ADC_SC1_ADCH(26);
       break;
     default:
       return (unsigned int) -1;
@@ -178,8 +195,7 @@ unsigned int adc_read(unsigned int channel) {
   // COCO=1 when conversion completes
   //while( (ADC0->SC2 & ADC_SC2_ADACT_MASK) )  // converting
   //  ;
-  while( !(ADC0->SC1[0] & ADC_SC1_COCO_MASK) )  // complete
-    ;
+  while( !(ADC0->SC1[0] & ADC_SC1_COCO_MASK) ) ; // complete 
 
   // clear COCO
   ADC0->SC1[0] &= ~(ADC_SC1_COCO_MASK);
