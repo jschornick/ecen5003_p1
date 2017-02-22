@@ -18,5 +18,9 @@ int adc_init(void);
 void adc_config(void);
 int adc_calibrate(void);
 unsigned int adc_read(unsigned int channel);
+void read_all_adcs();
+
+extern unsigned int adc_vals[3];
+
 
 #endif

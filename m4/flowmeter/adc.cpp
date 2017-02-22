@@ -29,14 +29,17 @@
 // the CMSIS Peripheral Access Layer for our processor
 #include "MKL25Z4.h"
 #include "adc.h"
+#include "timer.h"  // adc_flag
+
+unsigned int adc_vals[3];
 
 int adc_init(void) {
   int cal_status;
-  // Power on the clock for ADC0
+  // power on the clock for ADC0
   SIM->SCGC6 |= SIM_SCGC6_ADC0_MASK;
   adc_config();
   cal_status = adc_calibrate();
-  adc_config(); // just in case the calibraiton affected our config
+  adc_config();  // restore any settings modified during calibration
   return cal_status;
 }
 
@@ -96,8 +99,8 @@ void adc_config(void) {
 
 }
 
-// required ADC calibration
-// returns 0 on success
+// ADC calibration, required for accurate readings
+// returns CAL_SUCCESS (0) when successful
 //
 // See: KL25 reference p494
 int adc_calibrate(void) {
@@ -110,12 +113,12 @@ int adc_calibrate(void) {
 
   // <4 Mhz
   // 0x3 = clock divider = 8 (input clock/8 = 3MHz)
-  ADC0->CFG1 |= ADC_CFG1_ADIV(0x3);
+  //ADC0->CFG1 |= ADC_CFG1_ADIV(0x3);
 
   // 0x0 = default voltage references (V_refh, Vrefl)
-  ADC0->SC2 |= ADC_SC2_REFSEL(0x0);
+  //ADC0->SC2 |= ADC_SC2_REFSEL(0x0);
 
-  // ADTRG=0
+  // ADTRG=0 or calibration will fail
   ADC0->SC2 &= ~ADC_SC2_ADTRG_MASK;
 
   // Initiate calibration, set CAL=1
@@ -171,10 +174,12 @@ int adc_calibrate(void) {
 /* PTB2(45) : ADC0_SE12 : ch 2? : temp sensor? (channel 11010 only?) */
 unsigned int adc_read(unsigned int channel) {
 
-  // set channel (clears COCO), check conversion complete, read data reg
-  // conversions restart when we write to SC1A
+  // ADC read steps:
+  //   set channel (clears COCO)
+  //   check conversion complete
+  //   read data register
 
-  // clear channel mask bits and replace with new channel
+  // clear channel mask bits and replace with desired channel
   switch (channel) {
     case CHANNEL_0:
       // vrefl  (NOT ADC0_SE8)
@@ -192,14 +197,21 @@ unsigned int adc_read(unsigned int channel) {
       return (unsigned int) -1;
   }
 
-  // COCO=1 when conversion completes
-  //while( (ADC0->SC2 & ADC_SC2_ADACT_MASK) )  // converting
-  //  ;
-  while( !(ADC0->SC1[0] & ADC_SC1_COCO_MASK) ) ; // complete 
+  // COCO=1 when conversion completes, busy wait until true
+  while( !(ADC0->SC1[0] & ADC_SC1_COCO_MASK) ) ;
 
   // clear COCO
   ADC0->SC1[0] &= ~(ADC_SC1_COCO_MASK);
 
   return ADC0->R[0]; 
 
+}
+
+void read_all_adcs(void) {
+  if(adc_flag) {
+    adc_vals[0] = adc_read(CHANNEL_0);
+    adc_vals[1] = adc_read(CHANNEL_1);
+    adc_vals[2] = adc_read(CHANNEL_2);
+    adc_flag = 0;
+  }
 }
