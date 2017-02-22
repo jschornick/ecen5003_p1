@@ -107,11 +107,11 @@ const int pow10_table[] = {
 1861,72620
 };
 
+// find approximation for 10^x from lookup table
+// num = x*1000
 int pow10(int num) {
   int i = 0;
   int result=0;
-  //return 44875;
-  //return pow10_table[167];
   for(i = 0; i<200; i+=2) {
     if ( pow10_table[i] < num) {
       result = pow10_table[i+1];
