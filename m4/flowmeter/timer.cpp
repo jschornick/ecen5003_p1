@@ -83,6 +83,8 @@ volatile uint16_t SwTimerIsrCounter = 0U;
 UCHAR display_timer = 0;  // 1 second software timer for display
 UCHAR display_flag = 0;   // flag between timer interrupt and monitor
 
+UCHAR adc_flag = 0;  // 100us per ADC read
+
 UCHAR red_heartbeat_timer = 0;
 volatile UCHAR red_heartbeat_flag = 0;
 
@@ -129,7 +131,7 @@ void timer0(void)
 
   //    B.   Update Sensors
   /****************  ECEN 5003 add code as indicated *****************/
-  //adc_flag = 1;   // time to sample the ADC in main
+  adc_flag = 1;   // time to sample the ADC in main
 
   /*******************************************************************/
   /*      200 us Group                                               */

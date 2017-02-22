@@ -30,6 +30,7 @@
 #include "uart.h"
 #include "monitor.h"
 #include "timer.h"
+#include "adc.h"
 
 int stack_flag = 0;
 int memory_flag = 0;
@@ -38,7 +39,7 @@ int memory_flag = 0;
 UCHAR msg_buf[MSG_BUF_SIZE]; // define the storage for UART received messages
 UCHAR msg_buf_idx = 0;    // index into the received message buffer
 
-enum dmode display_mode = DEBUG;
+enum dmode display_mode = ADC;
 
 /*******************************************************************************
 * Set Display Mode Function
@@ -146,11 +147,17 @@ void process_message(void)
   }
 
   switch( chr ) {
+    case 'A':
+      display_mode = ADC;
+      uart_msg_put("\r\nMode=ADC\r\n");
+      display_timer = 0;
+      break;
+
     case 'D':
       display_mode = DEBUG;
-        uart_msg_put("\r\nMode=DEBUG\r\n");
-        display_timer = 0;
-        break;
+      uart_msg_put("\r\nMode=DEBUG\r\n");
+      display_timer = 0;
+      break;
 
     case 'N':
       display_mode = NORMAL;
@@ -282,7 +289,7 @@ void display_stack(void) {
   //cont char max_depth = 16;  // max stack depth to dump
   int *stack_base = (int *) *( (int *) 0x0);  // deference MSP to get top of stack
   //int x;
-  
+
   uart_msg_put("\r\nStack:\r\n");
   for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
     uart_hex_word_put( *stack_ptr );
@@ -297,11 +304,37 @@ void display_readings() {
   // *** ECEN 5003 add code as indicated ***
   // add flow data output here, use uart_hex_put or similar for numbers
   uart_msg_put(" Temp: ");
-  //  add flow data output here, use uart_hex_put or similar for numbers
+  uart_dec_put(convert_temp(adc_vals[2]));
   uart_msg_put(" Freq: ");
-  // add flow data output here, use uart_hex_put or similar for numbers
-   
+  // add freq data output here, use uart_hex_put or similar for numbers
 }
+
+// convert an ADC reading into temperature in C
+// See: KL25 reference manual p497
+int convert_temp(unsigned int v_temp) {
+  return 25 - ((v_temp - V_TEMP25)/M);
+}
+
+// ADC display
+void display_adcs() {
+
+  uart_msg_put("ADC ch0: ");
+  uart_hex_word_put(adc_vals[0]);
+  uart_msg_put("\r\n");
+
+  uart_msg_put("ADC ch1: ");
+  uart_hex_word_put(adc_vals[1]);
+  uart_msg_put("\r\n");
+
+  uart_msg_put("ADC ch2: ");
+  uart_hex_word_put(adc_vals[2]);
+  uart_msg_put("\r\n");
+
+
+  uart_msg_put("\r\n\r\n");
+
+}
+
 
 /*******************************************************************************
 * DEBUG and DIAGNOSTIC Mode UART Operation
@@ -337,6 +370,12 @@ void monitor(void)
           // and display it in reverse chronological order.
           display_stack();
           display_flag = 0;
+      }
+      break;
+    case(ADC):
+      if (display_flag == 1) {
+        display_adcs();
+        display_flag = 0;
       }
       break;
     default:

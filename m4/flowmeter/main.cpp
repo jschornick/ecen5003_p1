@@ -33,7 +33,13 @@
 
 #include "drivers/Ticker.h"
 #include "drivers/DigitalOut.h"
+#include "drivers/Serial.h"
+#include "drivers/AnalogIn.h"
 using namespace mbed;
+
+//#include "mbed.h"
+
+#include "adc.h"
 
 #define LED_ON 0
 #define LED_OFF 1
@@ -46,6 +52,13 @@ DigitalOut green_led(LED_GREEN, LED_OFF);
 DigitalOut red_led(LED_RED, LED_OFF);
 DigitalOut blue_led(LED_BLUE, LED_OFF);
 
+//AnalogIn ch0(PTB0);
+//AnalogIn ch1(PTB1);
+//AnalogIn ch2(PTB2);
+
+Serial pc(USBTX, USBRX);
+
+
 void red_heartbeat()
 {
   red_led = !red_led;
@@ -56,8 +69,18 @@ void toggle_green_led() {
   green_led = !green_led;
 }
 
+
 int main()
 {
+
+  pc.printf("Core clock: %d\r\n", SystemCoreClock);
+
+  if( adc_init() == CAL_SUCCESS ) {
+    pc.printf("ADC calibration success!\r\n");
+  } else {
+    pc.printf("ADC calibration failed!\r\n");
+  }
+
   /****************  ECEN 5003 add code as indicated  ***************/
   //  Add code to call timer0 function every 100 uS
   tick.attach(&timer0, T100US_IN_SECS);
@@ -83,11 +106,11 @@ int main()
     /****************  ECEN 5003 add code as indicated  ***************/
     uart_poll();  // Polls the serial port
     read_message_from_uart();  // checks for a serial port message received
-    monitor();       // Sends serial port output messages depending
-
-    //readADC()
+    read_all_adcs();  // read ADC channels (if flag set)
 
     //calculate flow()
+
+    monitor();       // Sends serial port output messages depending
 
     //4-20 output ()    // use TMP0 channel 3  proporional rate to flow
 
@@ -95,10 +118,10 @@ int main()
 
     //LCD_Display()   // use the SPI port to send flow number
 
-    if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
-    {
+    //if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
+    //{
       //toggle_green_led();
-    }
+    //}
     if ( red_heartbeat_flag ) {
       red_heartbeat();
     }
