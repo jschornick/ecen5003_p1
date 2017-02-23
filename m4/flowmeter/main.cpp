@@ -47,29 +47,29 @@ Ticker tick;  //  Creates a timer interrupt using mbed methods
 int main()
 {
 
-  pc.printf("Core clock: %d\r\n", SystemCoreClock);
+  /* startup message  */
+  uart_msg_put("\r\nSystem Reset\r\nCode ver. ");
+  uart_msg_put( CODE_VERSION );
+  uart_msg_put("\r\n");
+  uart_msg_put( COPYRIGHT );
+  uart_msg_put("\r\n");
+
+  uart_msg_put("Core clock speed: ");
+  uart_dec_put(SystemCoreClock);
+  uart_msg_put("\r\n\r\n");
 
   if( adc_init() == CAL_SUCCESS ) {
-    pc.printf("ADC calibration success!\r\n");
+    uart_msg_put("ADC calibration comoplete.\r\n");
   } else {
-    pc.printf("ADC calibration failed!\r\n");
+    uart_msg_put("ADC calibration failed!\r\n");
   }
 
-  /****************  ECEN 5003 add code as indicated  ***************/
-  //  Add code to call timer0 function every 100 uS
+  led_init();
+  uart_init();  // switch to buffered uart mode
+  
+  uint32_t count = 0;
   tick.attach(&timer0, T100US_IN_SECS);
-
-  uint32_t  count = 0;
-
-  uart_init();
-
-  /* startup message  */
-  uart_direct_msg_put("\r\nSystem Reset\r\nCode ver. ");
-  uart_direct_msg_put( CODE_VERSION );
-  uart_direct_msg_put("\r\n");
-  uart_direct_msg_put( COPYRIGHT );
-  uart_direct_msg_put("\r\n");
-
+  
   display_menu();
 
   // Cyclical Executive Loop

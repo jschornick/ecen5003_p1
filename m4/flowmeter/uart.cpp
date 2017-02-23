@@ -51,16 +51,6 @@ UCHAR *tx_out_ptr; /* pointer to the transmit out */
 UCHAR rx_buf[RX_BUF_SIZE];      /* define the storage */
 UCHAR tx_buf[TX_BUF_SIZE];      /* define the storage */
 
-// NOTE:  UART0 is also called UARTLP in mbed
-#define OERR (UART0->S1 & UARTLP_S1_OR_MASK)   // Overrun Error bit
-#define CREN (UART0->C2 & UARTLP_C2_RE_MASK)   // continuous receive enable bit
-#define RCREG UART0->D                         // Receive Data Register
-#define FERR (UART0->S1 & UARTLP_S1_FE_MASK)   // Framing Error bit
-#define RCIF (UART0->S1 & UARTLP_S1_RDRF_MASK) // Receive Interrupt Flag (full)
-#define TXIF (UART0->S1 & UARTLP_S1_TDRE_MASK) // Transmit Interrupt Flag (empty)
-#define TXREG UART0->D                         // Transmit Data Register
-#define TRMT (UART0->S1 & UARTLP_S1_TC_MASK)   // Transmit Shift Register Empty
-
 UCHAR serial_flag = 0;
 UCHAR error_count = 0;
 
@@ -74,6 +64,20 @@ void uart_init(void) {
   rx_out_ptr = rx_buf;  /* pointer to the receive out data */
   tx_in_ptr =  tx_buf;  /* pointer to the transmit in data */
   tx_out_ptr = tx_buf;  /* pointer to the transmit out */
+  uart_mode(UART_BUFFERED);
+}
+
+void (*uart_put)(UCHAR) = &uart_direct_put;
+
+void uart_mode(int mode) {
+  switch (mode) {
+    case UART_DIRECT:
+      uart_put = &uart_direct_put;
+      break;
+    case UART_BUFFERED:
+      uart_put = &uart_buffered_put;
+      break;
+  }
 }
 
 // Polls the serial port for received data or data to transmit
@@ -134,20 +138,13 @@ void uart_poll(void)
 }
 
 /*******************************************************************************
-* The function UART_direct_msg_put puts a null terminated string directly
-* (no ram buffer) to the UART in ASCII format.
+* The function uart_direct_hex_put puts 1 byte directly (no ram buffer)
+* to the UART.
 *******************************************************************************/
-void uart_direct_msg_put(const char *str)
+void uart_direct_put(unsigned char c)
 {
-  while( *str != '\0' )
-  {
-    TXREG = *str++;
-    while( TXIF == 0 || TRMT == 0 )  // waits here for UART transmit buffer
-                                     // to be empty
-    {
-      //  __clear_watchdog_timer();
-    }
-  }
+  while( TXIF == 0 || TRMT == 0);
+  TXREG = c;
 }
 
 /*******************************************************************************
@@ -158,7 +155,7 @@ void uart_direct_msg_put(const char *str)
 * disabled since it reads tx_in_idx and this routine updates tx_in_idx which is
 * a 16 bit value.
 *******************************************************************************/
-void uart_put(UCHAR c)
+void uart_buffered_put(UCHAR c)
 {
    *tx_in_ptr++ = c;                    /* save character to transmit buffer */
    if( tx_in_ptr >= TX_BUF_SIZE + tx_buf)
@@ -211,12 +208,42 @@ void uart_msg_put(const char *str)
 {
    while( *str != '\0' )
    {
-      *tx_in_ptr++ = *str++;        /* save character to transmit buffer */
-      if( tx_in_ptr >= TX_BUF_SIZE + tx_buf)
-         tx_in_ptr = tx_buf;                  /* 0 <= tx_in_idx < TX_BUF_SIZE */
+     uart_put(*str++);
    }
 }
 
+/*******************************************************************************
+* The function uart_hex_put puts 1 byte in hex through the transmit buffer to
+* the UART port.
+*******************************************************************************/
+void uart_hex_put(unsigned char c)
+{
+   uart_put( hex_to_asc( (c>>4) & 0x0f ));  // could eliminate & as >> of UCHAR
+                                            // by definition clears upper bits.
+   uart_put( hex_to_asc( c & 0x0f ));
+}
+
+void uart_word_put(unsigned int word) {
+  // Iteratively through each 4-bit nibble, starting from the MSB at bits 31-28
+  for(int shift=28; shift>=0; shift-=4) {
+    uart_put( hex_to_asc((word>>shift) & 0x0f) ); // output next nibble as hex
+  }
+}
+
+void uart_dec_put(unsigned int num) {
+  // Iterate through a maximum of 10 digits
+  unsigned char digits[10];
+  unsigned char digit = 0;
+  do {
+    digits[digit] = num % 10;
+    num /= 10;
+    digit++;
+  } while (num != 0);
+  do {
+    digit--;
+    uart_put( '0' + digits[digit] );
+  } while (digit > 0); 
+}
 
 /*******************************************************************************
 * HEX_TO_ASC Function
@@ -239,57 +266,3 @@ UCHAR asc_to_hex(UCHAR c)
       return( c - 0x30 );
    return( (c & 0xdf) - 0x37 );    /* clear bit 5 (lower case) & subtract 37h */
 }
-
-/*******************************************************************************
-* The function uart_hex_put puts 1 byte in hex through the transmit buffer to
-* the UART port.
-*******************************************************************************/
-void uart_hex_put(unsigned char c)
-{
-   uart_put( hex_to_asc( (c>>4) & 0x0f ));  // could eliminate & as >> of UCHAR
-                                            // by definition clears upper bits.
-   uart_put( hex_to_asc( c & 0x0f ));
-}
-
-/*******************************************************************************
-* The function uart_direct_hex_put puts 1 byte in hex directly (no ram buffer)
-* to the UART.
-*******************************************************************************/
-void uart_direct_hex_put(unsigned char c)
-{
-   TXREG = hex_to_asc( (c>>4) & 0x0f );
-   while( TXIF == 0 )
-   {
-    //  __clear_watchdog_timer();
-   }
-   TXREG = hex_to_asc( c & 0x0f );
-   while( TXIF == 0 )
-   {
-    //  __clear_watchdog_timer();
-   }
-}
-
-void uart_hex_word_put(unsigned int word) {
-  // Iteratively through each 4-bit nibble, starting from the MSB at bits 31-28
-  for(int shift=28; shift>=0; shift-=4) {
-    uart_put( hex_to_asc((word>>shift) & 0x0f) ); // output next nibble as hex
-  }
-}
-
-void uart_dec_put(unsigned int num) {
-  // Iterate through a maximum of 10 digits
-  unsigned char digits[10];
-  unsigned char digit = 0;
-  do {
-    digits[digit] = num % 10;
-    num /= 10;
-    digit++;
-  } while (num != 0);
-  do {
-    digit--;
-    uart_put( '0' + digits[digit] );
-  } while (digit > 0); 
-}
-
-
-

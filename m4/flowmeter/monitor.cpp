@@ -62,13 +62,12 @@ enum dmode display_mode = NORMAL;
 
 void display_menu(void)
 {
-  uart_direct_msg_put("\r\n");
-  uart_direct_msg_put("Main menu\r\n");
-  uart_direct_msg_put("N - Normal\r\n");
-  uart_direct_msg_put("Q - Quiet\r\n");
-  uart_direct_msg_put("D - Debug\r\n" );
-  uart_direct_msg_put("V - Version\r\n");
-  uart_direct_msg_put("Select:");
+  uart_msg_put("\r\nMain menu\r\n");
+  uart_msg_put("N - Normal\r\n");
+  uart_msg_put("Q - Quiet\r\n");
+  uart_msg_put("D - Debug\r\n" );
+  uart_msg_put("V - Version\r\n");
+  uart_msg_put("Select:");
 }
 
 
@@ -258,7 +257,7 @@ void display_registers(void) {
     uart_put('0' + regnum/10);
     uart_put('0' + regnum%10);
     uart_msg_put(": ");
-    uart_hex_word_put(regs[regnum]);
+    uart_word_put(regs[regnum]);
     uart_msg_put("\r\n");
   }
 }
@@ -271,9 +270,9 @@ void display_registers(void) {
 void display_memory(int addr) {
   int val = *((int *) addr);
   uart_msg_put("\r\nMEM(0x");
-  uart_hex_word_put(addr);
+  uart_word_put(addr);
   uart_msg_put("):\r\n");
-  uart_hex_word_put(val);
+  uart_word_put(val);
   uart_msg_put("\r\n");
 }
 
@@ -293,7 +292,7 @@ void display_stack(void) {
 
   uart_msg_put("\r\nStack:\r\n");
   for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
-    uart_hex_word_put( *stack_ptr );
+    uart_word_put( *stack_ptr );
     uart_msg_put("\r\n");
   }
 }
@@ -321,15 +320,15 @@ int convert_temp(unsigned int v_temp) {
 void display_adcs() {
 
   uart_msg_put("ADC ch0: ");
-  uart_hex_word_put(adc_vals[0]);
+  uart_word_put(adc_vals[0]);
   uart_msg_put("\r\n");
 
   uart_msg_put("ADC ch1: ");
-  uart_hex_word_put(adc_vals[1]);
+  uart_word_put(adc_vals[1]);
   uart_msg_put("\r\n");
 
   uart_msg_put("ADC ch2: ");
-  uart_hex_word_put(adc_vals[2]);
+  uart_word_put(adc_vals[2]);
   uart_msg_put("\r\n");
 
 
