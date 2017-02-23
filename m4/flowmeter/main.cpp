@@ -27,45 +27,22 @@
 --
 */
 
+#include "drivers/Ticker.h"
+//#include "drivers/DigitalOut.h"
+#include "drivers/Serial.h"
+//#include "drivers/AnalogIn.h"
+using namespace mbed;
+
+
+// NOTE: may not link if these includes are before mbed includes
 #include "timer.h"
 #include "monitor.h"
 #include "uart.h"
-
-#include "drivers/Ticker.h"
-#include "drivers/DigitalOut.h"
-#include "drivers/Serial.h"
-#include "drivers/AnalogIn.h"
-using namespace mbed;
-
-//#include "mbed.h"
-
-// won't compile if we include this before mbed files??
+#include "led.h"
 #include "flow_calc.h"
 #include "adc.h"
 
-#define LED_ON 0
-#define LED_OFF 1
-
 Ticker tick;  //  Creates a timer interrupt using mbed methods
-
-/****************  ECEN 5003 add code as indicated  ***************/
-// Add code to control red, green and blue LEDs here
-DigitalOut green_led(LED_GREEN, LED_OFF);
-DigitalOut red_led(LED_RED, LED_OFF);
-DigitalOut blue_led(LED_BLUE, LED_OFF);
-
-Serial pc(USBTX, USBRX);
-
-void red_heartbeat()
-{
-  red_led = !red_led;
-  red_heartbeat_flag = 0;
-}
-
-void toggle_green_led() {
-  green_led = !green_led;
-}
-
 
 int main()
 {
@@ -105,24 +82,19 @@ int main()
     read_message_from_uart();  // checks for a serial port message received
     read_all_adcs();  // read ADC channels (if flag set)
 
-    if( display_flag ) {
+    //if( display_flag ) {
     calc_temp(adc_vals[2]);
     calc_freq(adc_test_data, VORTEX_INPUT_SIZE);
     calc_flow(freq, temp);
-    }
-      
+    //}
+
     monitor();       // Sends serial port output messages depending
 
-    //4-20 output ()    // use TMP0 channel 3  proporional rate to flow
-
-    //Pulse output()   // use TMP0 channel 4  propotional rate to frequency
+    led_420_output();     // use TMP0 channel 3  proporional rate to flow
+    led_pulse_output();   // use TMP0 channel 4  propotional rate to frequency
 
     //LCD_Display()   // use the SPI port to send flow number
 
-    //if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
-    //{
-      //toggle_green_led();
-    //}
     if ( red_heartbeat_flag ) {
       red_heartbeat();
     }
