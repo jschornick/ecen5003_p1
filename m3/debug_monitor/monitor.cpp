@@ -1,9 +1,9 @@
 /*-----------------------------------------------------------------------------
 --                                                                           --
 --              ECEN 5003 Mastering Embedded System Architecture             --
---                  Project 1 Module 3                                       --
+--                  Project 1                                                --
 --                Microcontroller Firmware                                   --
---                      Monitor.c                                            --
+--                  monitor.c                                                --
 --                                                                           --
 -------------------------------------------------------------------------------
 --
@@ -38,7 +38,7 @@ int memory_flag = 0;
 UCHAR msg_buf[MSG_BUF_SIZE]; // define the storage for UART received messages
 UCHAR msg_buf_idx = 0;    // index into the received message buffer
 
-enum dmode display_mode = DEBUG;
+enum dmode display_mode = NORMAL;
 
 /*******************************************************************************
 * Set Display Mode Function
@@ -60,13 +60,12 @@ enum dmode display_mode = DEBUG;
 
 void display_menu(void)
 {
-  uart_direct_msg_put("\r\n");
-  uart_direct_msg_put("Main menu\r\n");
-  uart_direct_msg_put("N - Normal\r\n");
-  uart_direct_msg_put("Q - Quiet\r\n");
-  uart_direct_msg_put("D - Debug\r\n" );
-  uart_direct_msg_put("V - Version\r\n");
-  uart_direct_msg_put("Select:");
+  uart_msg_put("\r\nMain menu\r\n");
+  uart_msg_put("N - Normal\r\n");
+  uart_msg_put("Q - Quiet\r\n");
+  uart_msg_put("D - Debug\r\n" );
+  uart_msg_put("V - Version\r\n");
+  uart_msg_put("Select:");
 }
 
 
@@ -146,11 +145,12 @@ void process_message(void)
   }
 
   switch( chr ) {
+
     case 'D':
       display_mode = DEBUG;
-        uart_msg_put("\r\nMode=DEBUG\r\n");
-        display_timer = 0;
-        break;
+      uart_msg_put("\r\nMode=DEBUG\r\n");
+      display_timer = 0;
+      break;
 
     case 'N':
       display_mode = NORMAL;
@@ -250,7 +250,7 @@ void display_registers(void) {
     uart_put('0' + regnum/10);
     uart_put('0' + regnum%10);
     uart_msg_put(": ");
-    uart_hex_word_put(regs[regnum]);
+    uart_word_put(regs[regnum]);
     uart_msg_put("\r\n");
   }
 }
@@ -263,9 +263,9 @@ void display_registers(void) {
 void display_memory(int addr) {
   int val = *((int *) addr);
   uart_msg_put("\r\nMEM(0x");
-  uart_hex_word_put(addr);
+  uart_word_put(addr);
   uart_msg_put("):\r\n");
-  uart_hex_word_put(val);
+  uart_word_put(val);
   uart_msg_put("\r\n");
 }
 
@@ -282,10 +282,10 @@ void display_stack(void) {
   //cont char max_depth = 16;  // max stack depth to dump
   int *stack_base = (int *) *( (int *) 0x0);  // deference MSP to get top of stack
   //int x;
-  
+
   uart_msg_put("\r\nStack:\r\n");
   for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
-    uart_hex_word_put( *stack_ptr );
+    uart_word_put( *stack_ptr );
     uart_msg_put("\r\n");
   }
 }
@@ -295,13 +295,12 @@ void display_stack(void) {
 void display_readings() {
   uart_msg_put(" Flow: ");
   // *** ECEN 5003 add code as indicated ***
-  // add flow data output here, use uart_hex_put or similar for numbers
-  uart_msg_put(" Temp: ");
-  //  add flow data output here, use uart_hex_put or similar for numbers
-  uart_msg_put(" Freq: ");
-  // add flow data output here, use uart_hex_put or similar for numbers
-   
+  uart_msg_put("  Temp: ");
+  uart_msg_put("  Freq: ");
+  uart_msg_put("\r\n");
 }
+
+
 
 /*******************************************************************************
 * DEBUG and DIAGNOSTIC Mode UART Operation

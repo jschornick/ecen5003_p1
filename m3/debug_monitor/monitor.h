@@ -1,9 +1,9 @@
 /*-----------------------------------------------------------------------------
 --                                                                           --
 --              ECEN 5003 Mastering Embedded System Architecture             --
---                  Project 1 Module 3                                       --
+--                  Project 1                                                --
 --                Microcontroller Firmware                                   --
---                      monitor.h                                            --
+--                  monitor.h                                                --
 --                                                                           --
 -----------------------------------------------------------------------------*/
 
@@ -13,7 +13,7 @@
 #define CODE_VERSION "2.0 2016/09/29"   /*   YYYY/MM/DD  */
 #define COPYRIGHT "Copyright (c) University of Colorado"
 
-enum dmode { QUIET, NORMAL, DEBUG };
+enum dmode { QUIET, NORMAL, DEBUG, ADC };
 
 extern unsigned char Error_status;          // Variable for debugging use
 

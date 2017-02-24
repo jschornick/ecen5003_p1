@@ -1,9 +1,9 @@
 /*-----------------------------------------------------------------------------
 --                                                                           --
 --              ECEN 5003 Mastering Embedded System Architecture             --
---                  Project 1 Module 3                                       --
+--                  Project 1                                                --
 --                Microcontroller Firmware                                   --
---                      main.cpp                                             --
+--                  main.cpp                                                 --
 --                                                                           --
 -------------------------------------------------------------------------------
 --
@@ -27,21 +27,23 @@
 --
 */
 
-#include "timer.h"
-#include "monitor.h"
-#include "uart.h"
-
 #include "drivers/Ticker.h"
+#include "drivers/Serial.h"
 #include "drivers/DigitalOut.h"
 using namespace mbed;
 
-#define LED_ON 0
-#define LED_OFF 1
+// NOTE: may not link if these includes are before mbed includes
+#include "timer.h"
+#include "monitor.h"
+#include "uart.h"
 
 Ticker tick;  //  Creates a timer interrupt using mbed methods
 
 /****************  ECEN 5003 add code as indicated  ***************/
 // Add code to control red, green and blue LEDs here
+#define LED_ON 0
+#define LED_OFF 1
+
 DigitalOut green_led(LED_GREEN, LED_OFF);
 DigitalOut red_led(LED_RED, LED_OFF);
 DigitalOut blue_led(LED_BLUE, LED_OFF);
@@ -58,21 +60,23 @@ void toggle_green_led() {
 
 int main()
 {
-  /****************  ECEN 5003 add code as indicated  ***************/
-  //  Add code to call timer0 function every 100 uS
-  tick.attach(&timer0, T100US_IN_SECS);
-
-  uint32_t  count = 0;
-
-  uart_init();
 
   /* startup message  */
-  uart_direct_msg_put("\r\nSystem Reset\r\nCode ver. ");
-  uart_direct_msg_put( CODE_VERSION );
-  uart_direct_msg_put("\r\n");
-  uart_direct_msg_put( COPYRIGHT );
-  uart_direct_msg_put("\r\n");
+  uart_msg_put("\r\nSystem Reset\r\nCode ver. ");
+  uart_msg_put( CODE_VERSION );
+  uart_msg_put("\r\n");
+  uart_msg_put( COPYRIGHT );
+  uart_msg_put("\r\n\r\n");
 
+  uart_msg_put("Core clock speed: ");
+  uart_dec_put(SystemCoreClock);
+  uart_msg_put("\r\n");
+
+  uart_init();  // switch to buffered uart mode
+  
+  uint32_t count = 0;
+  tick.attach(&timer0, T100US_IN_SECS);
+  
   display_menu();
 
   // Cyclical Executive Loop
@@ -83,6 +87,7 @@ int main()
     /****************  ECEN 5003 add code as indicated  ***************/
     uart_poll();  // Polls the serial port
     read_message_from_uart();  // checks for a serial port message received
+
     monitor();       // Sends serial port output messages depending
 
     if ((SwTimerIsrCounter & 0x1FFF) > 0x0FFF)
