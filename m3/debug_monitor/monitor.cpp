@@ -30,9 +30,9 @@
 #include "uart.h"
 #include "monitor.h"
 #include "timer.h"
+#include "system_MKL25Z4.h"
 
-int stack_flag = 0;
-int memory_flag = 0;
+int input_mode = 0; // set to 1 for multi-letter input
 
 #define MSG_BUF_SIZE 10
 UCHAR msg_buf[MSG_BUF_SIZE]; // define the storage for UART received messages
@@ -64,8 +64,24 @@ void display_menu(void)
   uart_msg_put("N - Normal\r\n");
   uart_msg_put("Q - Quiet\r\n");
   uart_msg_put("D - Debug\r\n" );
+  uart_msg_put("I - System Info\r\n");
   uart_msg_put("V - Version\r\n");
-  uart_msg_put("Select:");
+  uart_msg_put("? - Help\r\n");
+  uart_msg_put("Main -> ");
+}
+
+void debug_menu(void)
+{
+  uart_msg_put("\r\nDebug mode menu\r\n");
+  uart_msg_put("R - Registers\r\n");
+  uart_msg_put("M - Memory\r\n");
+  uart_msg_put("S - Stack\r\n" );
+  uart_msg_put("F - Flow Data\r\n");
+  uart_msg_put("I - System Info\r\n");
+  uart_msg_put("V - Version\r\n");
+  uart_msg_put("N - Normal mode\r\n");
+  uart_msg_put("? - Help\r\n");
+  uart_msg_put("Debug -> ");
 }
 
 
@@ -75,60 +91,43 @@ void display_menu(void)
 void read_message_from_uart(void)
 {
   UCHAR j;
-  while( uart_input() )      // while we have unprocessed data in the rx buffer  
+  while( uart_input() )  // while we have unprocessed data in the rx buffer
   {
-    j = uart_get();         // get next character
-    msg_buf[msg_buf_idx++] = j;
-    process_message();
-    break;
+    j = uart_get();      // get next character
+    if (!input_mode) {
+      msg_buf[msg_buf_idx++] = j;
+      process_message();
+    }
 
-    // TODO: continuous mode flag
-    // TODO: update_rate variable
-    // TODO: memory/stack toggle
-
-      // if multi-char mode...
-      if( j == '\r' )         // on a enter (return) key press
-      {                       // complete message (all messages end in carriage return)
-         uart_msg_put("->");
-         process_message();
+    else { // multi-char mode...
+      if( j == '\r' ) { // "enter" key
+        // complete message (all messages end in carriage return)
+        msg_buf[msg_buf_idx++] = 0;  // null terminate
+        process_message();
+      } else {
+        // continue adding to message
+        if( (j == '\b') || (j == 127) ) {
+          // backspace or del
+          if( msg_buf_idx != 1) {
+            // if not 1st char of the input param
+            // (char 0 is the command letter)
+            uart_msg_put("\b \b"); // backspace
+            msg_buf_idx--;
+          }
+        }
+        else if( msg_buf_idx < MSG_BUF_SIZE ) {
+          // we're below max length, so store character
+          msg_buf[msg_buf_idx] = j;
+          msg_buf_idx++;
+          if ((j != 0x02) ) {
+            // echo if not command char
+            uart_put(j);
+          }
+        }
       }
-      else
-      {
-         if ((j != 0x02) )   // if not ^B
-         {                   // if not command, then
-            uart_put(j);     // echo the character
-         }
-         else
-         {
-           ;
-         }
-         if( j == '\b' )
-         {                          // backspace editor
-            if( msg_buf_idx != 0)
-            {                       // if not 1st character then destructive
-               uart_msg_put(" \b"); // backspace
-               msg_buf_idx--;
-            }
-         }
-         else if( msg_buf_idx >= MSG_BUF_SIZE )
-         {                                // check message length too large
-            uart_msg_put("\r\nToo Long!");
-            msg_buf_idx = 0;
-         }
-         else if ((display_mode == QUIET) && (msg_buf[0] != 0x02) &&
-                  (msg_buf[0] != 'D') && (msg_buf[0] != 'N') &&
-                  (msg_buf[0] != 'V') &&
-                  (msg_buf_idx != 0))
-         {                          // if first character is bad in Quiet mode
-            msg_buf_idx = 0;        // then start over
-         }
-         else {                     // not complete message, store character
+    } // multi char
 
-            msg_buf[msg_buf_idx] = j;
-            msg_buf_idx++;
-         }
-      }
-   }
+  } // while input
 }
 
 //********************************************************************************************************
@@ -137,56 +136,94 @@ void read_message_from_uart(void)
 void process_message(void)
 {
   UCHAR chr;
-  UCHAR err=0;
-
   chr = msg_buf[0];
   if ((chr >= 'a' ) && (chr <= 'z'))  {
     chr -= ('a' - 'A');  // capitalize
   }
 
-  switch( chr ) {
-
-    case 'D':
-      display_mode = DEBUG;
-      uart_msg_put("\r\nMode=DEBUG\r\n");
-      display_timer = 0;
+  switch( display_mode ) {
+    case NORMAL:
+    case QUIET:
+      switch( chr ) {
+        case 'D':
+          uart_msg_put("\r\nMode -> DEBUG\r\n");
+          display_mode = DEBUG;
+          debug_menu();
+          display_timer = 0;
+          break;
+        case 'N':
+          display_mode = NORMAL;
+          uart_msg_put("\r\nMode -> NORMAL\r\n");
+          display_timer = 0;
+          break;
+        case 'Q':
+          display_mode = QUIET;
+          uart_msg_put("\r\nMode -> QUIET\r\n");
+          display_timer = 0;
+          break;
+        case 'I':
+          display_sysinfo();
+          display_timer = 0;
+          break;
+        case 'V':
+          display_version();
+          display_timer = 0;
+          break;
+        case '?':
+          display_menu();
+          display_timer = 0;
+          break;
+        default:
+          uart_msg_put("\r\nMain (? for menu) -> ");
+          display_timer = 0;
+      }
       break;
-
-    case 'N':
-      display_mode = NORMAL;
-      uart_msg_put("\r\nMode=NORMAL\r\n");
-      //display_timer = 0;
-      break;
-
-    case 'Q':
-      display_mode = QUIET;
-      uart_msg_put("\r\nMode=QUIET\r\n");
-      display_timer = 0;
-      break;
-
-    case 'V':
-      uart_msg_put("\r\n");
-      uart_msg_put( CODE_VERSION );
-      uart_msg_put("\r\nSelect  ");
-      display_timer = 0;
-      break;
-    default:
-      err = 1;
+    case DEBUG:
+      switch( chr ) {
+        case 'R':
+          display_registers();
+          display_timer = 0;
+          break;
+        case 'M':
+          if (msg_buf_idx == 1) {
+            uart_msg_put("\r\nMemory location? -> ");
+            input_mode = 1;  // get memory param
+          } else {
+            input_mode = 0;
+            display_memory();
+          }
+          display_timer = 0;
+          break;
+        case 'S':
+          display_stack();
+          display_timer = 0;
+          break;
+        case 'F':
+          display_readings();
+          display_timer = 0;
+          break;
+        case 'I':
+          display_sysinfo();
+          display_timer = 0;
+          break;
+        case 'N':
+          display_mode = NORMAL;
+          uart_msg_put("\r\nMode -> Normal\r\n");
+          display_timer = 0;
+          break;
+        case '?':
+          debug_menu();
+          display_timer = 0;
+          break;
+        default:
+          uart_msg_put("\r\nDebug (? for menu) -> ");
+          display_timer = 0;
+      }
   }
-
-   if( err == 1 )
-   {
-      display_menu();
-   }
-   else if( err == 2 )
-   {
-      uart_msg_put("\n\rNot in DEBUG Mode!");
-   }
-   else
-   {
+  if(!input_mode){
     msg_buf_idx = 0;  // put index to start of buffer for next message
-   }
-   msg_buf_idx = 0;  // put index to start of buffer for next message
+    display_timer = 0;
+  }
 }
 
 
@@ -260,13 +297,41 @@ void display_registers(void) {
 //******************************************************************************
 
 // Display the 32-bit value at the specified memory address.
-void display_memory(int addr) {
-  int val = *((int *) addr);
-  uart_msg_put("\r\nMEM(0x");
-  uart_word_put(addr);
-  uart_msg_put("):\r\n");
-  uart_word_put(val);
-  uart_msg_put("\r\n");
+void display_memory() {
+  unsigned int addr = 0x0;
+  unsigned int data;
+  unsigned char chr;
+  int digit;
+
+  for(int i = 1; i<9; i++) {
+    chr = msg_buf[i];
+    if( chr == 0 ) { break; } // null
+    digit = -1;
+    if( (chr >= '0') & (chr <= '9') ) {
+      digit = chr - '0';
+    }
+    if( (chr >= 'A') & (chr <= 'F') ) {
+      digit = 10 + chr - 'A';
+    }
+    if( (chr >= 'a') & (chr <= 'f') ) {
+      digit = 10 + chr - 'a';
+    }
+    if( digit < 0 ) {
+      uart_msg_put("\r\nBad memory location!\r\n");
+      return;
+    }
+    addr <<=4;
+    addr += digit;
+  }
+  uart_msg_put("\r\nMemory:\r\n");
+  for(int i=addr; i < addr+32; i += 4) {
+    uart_msg_put("Ox");
+    uart_word_put(i);
+    uart_msg_put(" : ");
+    data = *((int *) i);
+    uart_word_put(data);
+    uart_msg_put("\r\n");
+  }
 }
 
 //******************************************************************************
@@ -279,24 +344,38 @@ __asm int * get_sp(void) {
 }
 
 void display_stack(void) {
-  //cont char max_depth = 16;  // max stack depth to dump
   int *stack_base = (int *) *( (int *) 0x0);  // deference MSP to get top of stack
-  //int x;
 
-  uart_msg_put("\r\nStack:\r\n");
+  uart_msg_put("\r\nStack (most recent entries first):\r\n");
   for( volatile int *stack_ptr = get_sp(); stack_ptr < stack_base; stack_ptr++ ) {
     uart_word_put( *stack_ptr );
     uart_msg_put("\r\n");
   }
 }
 
-// **********
-
 void display_readings() {
-  uart_msg_put(" Flow: ");
   // *** ECEN 5003 add code as indicated ***
+  uart_msg_put(" Flow: ");
   uart_msg_put("  Temp: ");
   uart_msg_put("  Freq: ");
+  uart_msg_put("\r\n");
+}
+
+
+void display_sysinfo() {
+  uart_msg_put("\r\n");
+  uart_msg_put("System Information:\r\n");
+  uart_msg_put(" Core clock speed: ");
+  uart_dec_put(SystemCoreClock);
+  uart_msg_put("\r\n");
+  uart_msg_put(" Timer ISR count: ");
+  uart_dec_put(SwTimerIsrCounter);
+  uart_msg_put("\r\n");
+}
+
+void display_version() {
+  uart_msg_put("\r\n");
+  uart_msg_put( CODE_VERSION );
   uart_msg_put("\r\n");
 }
 
@@ -316,27 +395,13 @@ void monitor(void)
     case(NORMAL):
       if (display_flag == 1)
         {
-          uart_msg_put("\r\nNORMAL ");
           display_readings();
           display_flag = 0;
         }
       break;
     case(DEBUG):
-      if (display_flag == 1)
-        {
-          uart_msg_put("\r\nDEBUG ");
-          display_readings();
-
-          /****************  ECEN 5003 add code as indicated  ***************/
-          // Create a display of  error counts, sensor states, and ARM Registers R0-R15
-          display_registers();
-          //  Create a command to read a section of memory and display it
-          display_memory(0x0);
-          //  Create a command to read 16 words from the current stack
-          // and display it in reverse chronological order.
-          display_stack();
-          display_flag = 0;
-      }
+      // debug menu does not have continuous display
+      display_flag = 0;
       break;
     default:
       uart_msg_put("Mode Error");

@@ -79,17 +79,16 @@ volatile UCHAR swtimer5 = 0;
 volatile UCHAR swtimer6 = 0;
 volatile UCHAR swtimer7 = 0;
 
-volatile uint16_t SwTimerIsrCounter = 0U;
 UCHAR display_timer = 0;  // 1 second software timer for display
 UCHAR display_flag = 0;   // flag between timer interrupt and monitor
 
 UCHAR red_heartbeat_timer = 0;
 volatile UCHAR red_heartbeat_flag = 0;
 
-static uint32_t System_Timer_count = 0; // 32 bits, counts for
-                                          // 119 hours at 100 us period
-static uint16_t timer0_count = 0; // 16 bits, counts for
-                                   // 6.5 seconds at 100 us period
+volatile uint32_t SwTimerIsrCounter = 0U;
+
+static uint32_t System_Timer_count = 0; // 32 bits, counts for 119 hours at 100 us period
+static uint16_t timer0_count = 0; // 16 bits, counts for 6.5 seconds at 100 us period
 static UCHAR timer_state = 0;
 static UCHAR long_time_state = 0;
 //  variable which splits timer_states into groups

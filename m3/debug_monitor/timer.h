@@ -17,7 +17,7 @@ typedef unsigned char bit;
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
 
-extern volatile uint16_t SwTimerIsrCounter;
+extern volatile uint32_t SwTimerIsrCounter;
 
 extern volatile UCHAR swtimer0;
 extern volatile UCHAR swtimer1;

@@ -68,16 +68,12 @@ int main()
   uart_msg_put( COPYRIGHT );
   uart_msg_put("\r\n\r\n");
 
-  uart_msg_put("Core clock speed: ");
-  uart_dec_put(SystemCoreClock);
-  uart_msg_put("\r\n");
-
   uart_init();  // switch to buffered uart mode
-  
+
   uint32_t count = 0;
   tick.attach(&timer0, T100US_IN_SECS);
-  
-  display_menu();
+
+  //display_menu();
 
   // Cyclical Executive Loop
   while(1)
