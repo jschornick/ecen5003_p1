@@ -28,19 +28,16 @@
 */
 
 #include "drivers/Ticker.h"
-//#include "drivers/DigitalOut.h"
 #include "drivers/Serial.h"
-//#include "drivers/AnalogIn.h"
 using namespace mbed;
-
 
 // NOTE: may not link if these includes are before mbed includes
 #include "timer.h"
 #include "monitor.h"
 #include "uart.h"
-#include "led.h"
-#include "flow_calc.h"
 #include "adc.h"
+#include "outputs.h"
+#include "flow_calc.h"
 
 Ticker tick;  //  Creates a timer interrupt using mbed methods
 
@@ -52,20 +49,21 @@ int main()
   uart_msg_put( CODE_VERSION );
   uart_msg_put("\r\n");
   uart_msg_put( COPYRIGHT );
-  uart_msg_put("\r\n");
+  uart_msg_put("\r\n\r\n");
 
   uart_msg_put("Core clock speed: ");
   uart_dec_put(SystemCoreClock);
-  uart_msg_put("\r\n\r\n");
+  uart_msg_put("\r\n");
 
   if( adc_init() == CAL_SUCCESS ) {
-    uart_msg_put("ADC calibration comoplete.\r\n");
+    uart_msg_put("ADC calibration successful.\r\n");
   } else {
     uart_msg_put("ADC calibration failed!\r\n");
   }
 
   led_init();
   uart_init();  // switch to buffered uart mode
+  lcd_init();
   
   uint32_t count = 0;
   tick.attach(&timer0, T100US_IN_SECS);
@@ -90,10 +88,10 @@ int main()
 
     monitor();       // Sends serial port output messages depending
 
-    led_420_output();     // use TMP0 channel 3  proporional rate to flow
-    led_pulse_output();   // use TMP0 channel 4  propotional rate to frequency
+    output_flow_420();     // use TMP0 channel 3  proporional rate to flow
+    output_freq_pulse();   // use TMP0 channel 4  propotional rate to frequency
 
-    //LCD_Display()   // use the SPI port to send flow number
+    lcd_display();   // use the SPI port to send flow number
 
     if ( red_heartbeat_flag ) {
       red_heartbeat();
