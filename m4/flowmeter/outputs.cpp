@@ -60,7 +60,7 @@ void lcd_init() {
 
 void lcd_display() {
   lcd_spi_cs = 1;  // select lcd for communication
-  lcd_spi.write(0x0);  // display commands are model specific
+  lcd_spi.write(flow);  // display commands depend on LCD model
   lcd_spi_cs = 0;
 }
 
