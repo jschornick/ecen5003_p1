@@ -16,11 +16,21 @@ using namespace mbed;
 // J2:13  / KL25:23 <-> PTE31 / TPM0_CH4
 
 DigitalOut red_led(LED_RED);
-DigitalOut flow_led(LED_GREEN);
-DigitalOut freq_led(LED_BLUE);
+DigitalOut green_led(LED_GREEN);
+DigitalOut blue_led(LED_BLUE);
 
+#ifdef FLOW_TO_LED
+PwmOut flow_pwm(LED_GREEN);
+#else
 PwmOut flow_pwm(PTE30);
+#endif
+
+
+#ifdef FREQ_TO_LED
+PwmOut freq_pwm(LED_BLUE);
+#else
 PwmOut freq_pwm(PTE31);
+#endif
 
 // PTC4 : SPI0_PCS0
 // PTC5 : SPI0_CLK
@@ -37,8 +47,8 @@ void pwm_init() {
 void led_init() {
   // note that the FRDM LEDs are pulled high
   red_led = LED_OFF;
-  flow_led = LED_OFF;
-  freq_led = LED_OFF;   
+  blue_led = LED_OFF;
+  green_led = LED_OFF;   
 }
 
 void lcd_init() {
@@ -55,11 +65,11 @@ void lcd_display() {
 }
 
 // flow PWM, proportional to rate of flow
-// 10 Hz for every 1 gpm
+// 1 Hz for every 1 gpm
 void output_flow_420(void) {
   if( flow > 0 ){
     flow_pwm = PWM_SQUARE;  // 50% duty, square wave
-    flow_pwm.period_us(10000000/flow);
+    flow_pwm.period_us((1000000 / HZ_PER_GPM) / flow);
   } else {
     flow_pwm = 0.0;  // 0% duty, off
   }
@@ -68,9 +78,9 @@ void output_flow_420(void) {
 // freq PWM, pulse rate proportional to vortex frequency
 // 10 Hz pulse for 1 Hz vortex
 void output_freq_pulse(void) {
-  if ( freq> 0 ) {
+  if ( freq > 0 ) {
     freq_pwm = PWM_SQUARE; // 50% duty, square wave
-    freq_pwm.period_us(10000000/freq); 
+    freq_pwm.period_us((1000000 / HZ_PER_VORTEX) / freq); 
   } else {
     freq_pwm = 0.0; // 0% duty, off
   }
@@ -78,7 +88,7 @@ void output_freq_pulse(void) {
 
 void red_heartbeat()
 {
-  //red_led = !red_led;
+  red_led = !red_led;
   red_heartbeat_flag = 0;
 }
 

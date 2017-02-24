@@ -7,6 +7,13 @@
 #define PWM_SQUARE 0.5  /* 50% duty, square wave */
 #define PWM_OFF 0.0
 
+#define HZ_PER_GPM 1
+#define HZ_PER_VORTEX 10
+
+// optionally send freq/flow PWM signals to LEDs for debugging
+//#define FLOW_TO_LED
+//#define FREQ_TO_LED
+
 #define LCD_SPI_LENGTH 8  /* 8-bit word, model specific */
 #define LCD_SPI_MODE 0  /* depends on LCD model */
 #define LCD_SPI_SPEED 2000000  /* depends on LCD model */
