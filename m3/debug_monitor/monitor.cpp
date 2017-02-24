@@ -149,40 +149,32 @@ void process_message(void)
           uart_msg_put("\r\nMode -> DEBUG\r\n");
           display_mode = DEBUG;
           debug_menu();
-          display_timer = 0;
           break;
         case 'N':
           display_mode = NORMAL;
           uart_msg_put("\r\nMode -> NORMAL\r\n");
-          display_timer = 0;
           break;
         case 'Q':
           display_mode = QUIET;
           uart_msg_put("\r\nMode -> QUIET\r\n");
-          display_timer = 0;
           break;
         case 'I':
           display_sysinfo();
-          display_timer = 0;
           break;
         case 'V':
           display_version();
-          display_timer = 0;
           break;
         case '?':
           display_menu();
-          display_timer = 0;
           break;
         default:
           uart_msg_put("\r\nMain (? for menu) -> ");
-          display_timer = 0;
       }
       break;
     case DEBUG:
       switch( chr ) {
         case 'R':
           display_registers();
-          display_timer = 0;
           break;
         case 'M':
           if (msg_buf_idx == 1) {
@@ -192,32 +184,29 @@ void process_message(void)
             input_mode = 0;
             display_memory();
           }
-          display_timer = 0;
           break;
         case 'S':
           display_stack();
-          display_timer = 0;
           break;
         case 'F':
           display_readings();
-          display_timer = 0;
+          uart_msg_put("\r\n");
           break;
         case 'I':
           display_sysinfo();
-          display_timer = 0;
           break;
         case 'N':
           display_mode = NORMAL;
           uart_msg_put("\r\nMode -> Normal\r\n");
-          display_timer = 0;
+          break;
+        case 'V':
+          display_version();
           break;
         case '?':
           debug_menu();
-          display_timer = 0;
           break;
         default:
           uart_msg_put("\r\nDebug (? for menu) -> ");
-          display_timer = 0;
       }
   }
   if(!input_mode){
@@ -355,10 +344,10 @@ void display_stack(void) {
 
 void display_readings() {
   // *** ECEN 5003 add code as indicated ***
+  uart_msg_put("\r\n");
   uart_msg_put(" Flow: ");
   uart_msg_put("  Temp: ");
   uart_msg_put("  Freq: ");
-  uart_msg_put("\r\n");
 }
 
 
@@ -374,7 +363,7 @@ void display_sysinfo() {
 }
 
 void display_version() {
-  uart_msg_put("\r\n");
+  uart_msg_put("\r\nVersion: ");
   uart_msg_put( CODE_VERSION );
   uart_msg_put("\r\n");
 }
