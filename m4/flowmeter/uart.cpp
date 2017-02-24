@@ -256,13 +256,3 @@ UCHAR hex_to_asc(UCHAR c)
    return( ((c & 0x0f) + 0x37 ));        /* add 37h */
 }
 
-/*******************************************************************************
-* ASC_TO_HEX Function
-* Function takes a single ASCII character and converts to hex.
-*******************************************************************************/
-UCHAR asc_to_hex(UCHAR c)
-{
-   if( c <= '9' )
-      return( c - 0x30 );
-   return( (c & 0xdf) - 0x37 );    /* clear bit 5 (lower case) & subtract 37h */
-}

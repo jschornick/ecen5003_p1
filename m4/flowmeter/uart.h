@@ -49,6 +49,5 @@ void uart_word_put(unsigned int);
 void uart_dec_put(unsigned int);
 
 UCHAR hex_to_asc(UCHAR c);
-UCHAR hex_to_asc(UCHAR c);
 
 #endif

@@ -70,16 +70,6 @@
 /*   Definitions     */
 /*********************/
 
-volatile UCHAR swtimer0 = 0;
-volatile UCHAR swtimer1 = 0;
-volatile UCHAR swtimer2 = 0;
-volatile UCHAR swtimer3 = 0;
-volatile UCHAR swtimer4 = 0;
-volatile UCHAR swtimer5 = 0;
-volatile UCHAR swtimer6 = 0;
-volatile UCHAR swtimer7 = 0;
-
-volatile uint16_t SwTimerIsrCounter = 0U;
 UCHAR display_timer = 0;  // 1 second software timer for display
 UCHAR display_flag = 0;   // flag between timer interrupt and monitor
 
@@ -88,12 +78,10 @@ UCHAR adc_flag = 0;  // 100us per ADC read
 UCHAR red_heartbeat_timer = 0;
 volatile UCHAR red_heartbeat_flag = 0;
 
-static uint32_t System_Timer_count = 0; // 32 bits, counts for
-                                          // 119 hours at 100 us period
-static uint16_t timer0_count = 0; // 16 bits, counts for
-                                   // 6.5 seconds at 100 us period
+volatile uint32_t SwTimerIsrCounter = 0U;
+
+static uint16_t timer0_count = 0; // 16 bits, counts for 6.5 seconds at 100 us period
 static UCHAR timer_state = 0;
-static UCHAR long_time_state = 0;
 //  variable which splits timer_states into groups
 //  tasks are run in their assigned group times
 //    DigitalOut BugMe (PTB9);   // debugging information out on PTB9
@@ -113,10 +101,6 @@ void timer0(void)
   //  Determine Timer0 state and task groups
   /************************************************/
   timer_state++;          // increment timer_state each time
-  if (timer_state == 0)
-  {
-    long_time_state++;   // increment long time state every 25.6 ms
-  }
 
   /*******************************************************************/
   /*      100 us Group                                               */
@@ -124,10 +108,6 @@ void timer0(void)
   //  II.  100 us Group
 
   //     A. Update Fast Software timers
-  if (swtimer0 > 0)  // if not yet expired,
-    (swtimer0)--;    // then decrement fast timer (1 ms to 256 ms)
-  if (swtimer1 > 0)  // if not yet expired,
-    (swtimer1)--;    // then decrement fast timer (1 ms to 256 ms)
 
   //    B.   Update Sensors
   /****************  ECEN 5003 add code as indicated *****************/
@@ -151,11 +131,6 @@ void timer0(void)
     //           timer states 2,6,10,14,18,22,...254
 
     //      A.  Medium Software timers
-    if (swtimer2 > 0)  // if not yet expired, every other time
-      (swtimer2)--;    // then decrement med timer  (4 ms to 1024 ms)
-    if (swtimer3 > 0)  // if not yet expired, every other time
-      (swtimer3)--;    // then decrement med timer  (4 ms to 1024 ms)
-
     //      B.
   } // end 400 us group
 
@@ -189,11 +164,6 @@ void timer0(void)
     //          timer states 16, 48, 80, 112, 144, 176, 208, 240
 
     //    A. Slow Software Timers
-    if (swtimer4 > 0)  // if not yet expired, every 32nd time
-      (swtimer4)--;    // then decrement slow timer (32 ms to 8 s)
-    if (swtimer5 > 0)  // if not yet expired, every 32nd time
-      (swtimer5)--;    // then decrement slow timer (32 ms to 8 s)
-
     //    B.  Update
   } // end 3.2 ms group
 
@@ -206,10 +176,6 @@ void timer0(void)
     //           timer states 32, 96, 160, 224
 
     //    A. Very Slow Software Timers
-    if (swtimer6 > 0)   // if not yet expired, every 64th time
-      (swtimer6)--;  // then decrement very slow timer (6.4 ms to 1.6s)
-    if (swtimer7 > 0) // if not yet expired, every 64th time
-      (swtimer7)--;  // then decrement very slow timer (64 ms to 1.6s)
 
       //    B.  Update
 
@@ -250,13 +216,7 @@ void timer0(void)
   /*******************************************************************/
   /*      Long Time Group                                            */
   /*******************************************************************/
-  if (((long_time_state & 0x01) != 0) && (timer_state == 0))
-    // every other long time, every 51.2 ms
-  {
-    // X.   Long time group
-  }
   // Re-enable interrupts and return
-  System_Timer_count++;
   timer0_count++;
   SwTimerIsrCounter++;
   //   Bugme = 0;  // debugging signal high during Timer0 interrupt on PTB9

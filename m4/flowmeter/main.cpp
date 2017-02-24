@@ -28,7 +28,6 @@
 */
 
 #include "drivers/Ticker.h"
-#include "drivers/Serial.h"
 using namespace mbed;
 
 // NOTE: may not link if these includes are before mbed includes
@@ -51,12 +50,8 @@ int main()
   uart_msg_put( COPYRIGHT );
   uart_msg_put("\r\n\r\n");
 
-  uart_msg_put("Core clock speed: ");
-  uart_dec_put(SystemCoreClock);
-  uart_msg_put("\r\n");
-
   if( adc_init() == CAL_SUCCESS ) {
-    uart_msg_put("ADC calibration successful.\r\n");
+    uart_msg_put("ADC calibrated.\r\n");
   } else {
     uart_msg_put("ADC calibration failed!\r\n");
   }
@@ -67,8 +62,6 @@ int main()
   
   uint32_t count = 0;
   tick.attach(&timer0, T100US_IN_SECS);
-  
-  display_menu();
 
   // Cyclical Executive Loop
   while(1)
