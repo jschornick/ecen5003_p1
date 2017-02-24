@@ -4,6 +4,7 @@ EventRecorderStub.scvd
 *.uvguix.*
 *.uvoptx
 *.uvprojx
+.#*
 
 BUILD/
 *.o
